@@ -26,18 +26,20 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         engine = MobileEngine(scheme: .pinyin)  // 零文件访问，纯内存
-        // 弹起瞬间只做最简：背景 + 空锚点容器（与官方模板同级别的简单度，
-        // 避免加载期复杂布局导致系统放弃/闪烁）。按钮与候选条延迟到首次布局稳定后构建。
+        // 终极方案：弹起瞬间立即构建完整内容并立即布局（无"空→满"突变、无按钮堆叠）。
+        // 1. 不用延迟构建：空容器再突然填满 = 内容突变，看起来就是"闪"
+        // 2. 不依赖 view.bounds 布局（viewDidLoad 时 bounds 为 0 → 按钮堆左上角 → 动画中修正 → 闪），
+        //    用 UIScreen 宽度 + 300pt 默认高度立即布局，弹起瞬间就是正确成品
+        // 3. viewDidLayoutSubviews 只做 frame 微调（不增删 subview，不打断系统动画）
         buildUI()
+        rebuildKeys()
+        didBuildContent = true
+        layoutFrames()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // 键盘高度稳定后（>100pt）再构建内容，确保弹起瞬间代码路径极简
-        if !didBuildContent && view.bounds.height > 100 {
-            didBuildContent = true
-            rebuildKeys()
-        }
+        // 只做 frame 布局（幂等改 frame，不增删 subview），按真实 bounds 微调。
         if didBuildContent {
             layoutFrames()
             if !candidateButtons.isEmpty { layoutCandidates() }
@@ -121,11 +123,13 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: - frame 布局（唯一布局入口）
 
     private func layoutFrames() {
-        let w = view.bounds.width
-        let h = view.bounds.height
+        // viewDidLoad 时 bounds 为 0，用 UIScreen 宽度 + 300pt 默认高度兜底立即布局
+        // （弹起瞬间就是正确成品，避免按钮堆叠后动画中修正造成的闪烁）
+        let w = view.bounds.width > 0 ? view.bounds.width : UIScreen.main.bounds.width
+        let h = view.bounds.height > 0 ? view.bounds.height : 300
         guard w > 0, h > 0 else { return }
-        let kw = keyArea.bounds.width
-        let kh = keyArea.bounds.height
+        let kw = keyArea.bounds.width > 0 ? keyArea.bounds.width : w
+        let kh = keyArea.bounds.height > 0 ? keyArea.bounds.height : h
         guard kw > 0, kh > 0 else { return }
 
         candidateBar.frame = CGRect(x: 0, y: 0, width: kw, height: 40)

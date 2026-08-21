@@ -26,6 +26,13 @@ final class HotwordsStore {
     private let fileURL: URL
 
     private init() {
+        // 键盘扩展受限沙盒：跳过一切文件访问（AppSettings.current 触发 FileManager 查询会被
+        // 拦截阻塞 → watchdog 杀进程 → 键盘"能弹但不持久"）。热词仅宿主/桌面端持久化。
+        if AppSettings.isKeyboardExtension {
+            fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("hotwords.json")
+            items = []
+            return
+        }
         let folder = AppSettings.current.resolvedDataDir
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         fileURL = folder.appendingPathComponent("hotwords.json")

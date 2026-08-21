@@ -95,9 +95,9 @@ xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' C
 
 - [x] v0.1: IMK skeleton + engine + phrases + Gboard UI
 - [x] v0.2: Xiaohe Shuangpin/Xingma + cross-platform data layer + iOS keyboard extension (App Group shared data)
-- [ ] User dictionary learning (auto-learn committed words)
+- [x] User dictionary learning (auto-learn committed words) — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
 - [ ] Clipboard history (cross-device)
-- [ ] Full dictionary / Xingma code table import docs
+- [x] Full dictionary / Xingma code table import docs — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
 - [x] iOS hardware signing guide (free Apple ID supported — see [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md))
 - [ ] Windows/Linux (TSF/ibus — port core engine)
 

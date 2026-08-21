@@ -103,7 +103,10 @@ final class PhraseKeyController: IMKInputController {
         guard index < candidates.count else { return }
         let c = candidates[index]
         client.insertText(c.text, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
-        // 常用语命中可回写排序偏好（后续可加），这里保持简单
+        // 自学习：词库候选上屏后记录，下次位置靠前
+        if c.type == "word", !c.pinyin.isEmpty {
+            PinyinEngine.shared.learn(word: c.text, pinyin: c.pinyin)
+        }
         reset()
     }
 

@@ -14,6 +14,9 @@ final class CodeTable {
     }
 
     private func load() {
+        // 键盘扩展受限沙盒：跳过外部码表（AppSettings.current 触发 FileManager 查询被拦截阻塞）。
+        // 未装码表 → hasLoaded=false → 音形模式退化为双拼（无输入丢失）。
+        guard !AppSettings.isKeyboardExtension else { return }
         let urls: [URL?] = [
             AppSettings.current.resolvedDataDir.appendingPathComponent("xingma.tsv"),
             Bundle.main.url(forResource: "xingma", withExtension: "tsv"),

@@ -17,6 +17,7 @@ final class Searcher {
         let type: String   // "hotword" | "word"
         let score: Int
         let hotword: Hotword?
+        let pinyin: String // 拼音（空格分隔，空格分隔音节），type=word 时有值
     }
 
     /// Combined search. scheme: pinyin / xiaohe shuangpin / xiaohe xingma.
@@ -37,13 +38,15 @@ final class Searcher {
                 case .initials: score = 3000
                 case .contains: score = 100
                 }
-                out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw))
+                out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw, pinyin: ""))
             }
-            // 词库
+            // 词库（用户词典 + 内置，用户词典 freq 更高自然靠前）
             for e in PinyinEngine.shared.query(norm, scheme: scheme) {
                 let pinyinExact = e.pinyin.replacingOccurrences(of: " ", with: "") == norm
-                let score = pinyinExact ? 2000 : 1000
-                out.append(Candidate(text: e.word, type: "word", score: score, hotword: nil))
+                let baseScore = pinyinExact ? 2000 : 1000
+                // 词频加成：freq 越高排越前，用户词典 freq 通常远大于内置
+                let freqBonus = min(e.freq, 999)
+                out.append(Candidate(text: e.word, type: "word", score: baseScore + freqBonus, hotword: nil, pinyin: e.pinyin))
             }
             // 音形模式：对词库候选做形码过滤（若装了码表）
             if scheme == .flypyXing {
@@ -53,7 +56,7 @@ final class Searcher {
             // 直接输入中文（如粘贴）：按子串找常用语
             for (type, hw) in HotwordsStore.shared.search(norm, scheme: scheme) {
                 let score = type == .contains ? 1000 : 2000
-                out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw))
+                out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw, pinyin: ""))
             }
         }
 

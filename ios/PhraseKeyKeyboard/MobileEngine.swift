@@ -36,9 +36,13 @@ final class MobileEngine {
     /// 提交第 index 个候选（不重置时返回文本）
     func commit(at index: Int) -> String? {
         guard candidates.indices.contains(index) else { return nil }
-        let text = candidates[index].text
+        let c = candidates[index]
+        // 自学习：词库候选记录到用户词典
+        if c.type == "word", !c.pinyin.isEmpty {
+            PinyinEngine.shared.learn(word: c.text, pinyin: c.pinyin)
+        }
         reset()
-        return text
+        return c.text
     }
 
     /// 回车/原样上屏拼音串

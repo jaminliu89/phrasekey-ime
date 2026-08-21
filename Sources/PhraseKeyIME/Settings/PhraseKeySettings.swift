@@ -61,4 +61,12 @@ struct PhraseKeySettings: Codable {
 final class AppSettings {
     static var current = PhraseKeySettings.load()
     static func save() { current.save() }
+
+    /// 是否运行在键盘扩展沙盒中（Bundle ID 以 .keyboard 结尾）。
+    /// 键盘扩展受限沙盒：访问 AppSettings.current 会触发 FileManager 查询宿主目录，
+    /// 被沙盒拦截阻塞 → watchdog 杀进程 → 系统惩罚性暂停键盘加载（表现："能弹但不持久/过会儿又闪"）。
+    /// 本属性只用 Bundle ID 判断，不触碰 current，安全。
+    static var isKeyboardExtension: Bool {
+        Bundle.main.bundleIdentifier?.hasSuffix(".keyboard") ?? false
+    }
 }

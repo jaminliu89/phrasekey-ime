@@ -13,12 +13,18 @@ final class PinyinEngine {
     static let shared = PinyinEngine()
 
     private var entries: [DictEntry] = []
+    private var userEntries: [DictEntry] = []  // 用户词典（自学习 + 手动添加）
     private var byInitials: [String: [DictEntry]] = [:]     // 简拼索引
     private var byPinyin: [String: [DictEntry]] = [:]       // 全拼索引（去掉空格）
     private var byFlypy: [String: [DictEntry]] = [:]        // 小鹤双拼索引
 
+    private let userDictQueue = DispatchQueue(label: "com.phrasekey.userdict")
+    private var userDictDirty = false
+    private var saveWorkItem: DispatchWorkItem?
+
     private init() {
         loadBuiltinDict()
+        loadUserDict()
         loadExternalDictIfAny()
         buildIndex()
     }
@@ -42,11 +48,111 @@ final class PinyinEngine {
     /// External user dict (optional): <dataDir>/user_dict.tsv
     /// Users can add full custom dictionaries. Syncs via shared data directory.
     private func loadExternalDictIfAny() {
+        // 键盘扩展受限沙盒：访问 AppSettings.current 会触发 FileManager 查询宿主目录，
+        // 被拦截阻塞 → watchdog 杀进程 → 键盘"能弹但不持久"的真凶。外部用户词典仅宿主/桌面端用。
+        guard !AppSettings.isKeyboardExtension else { return }
         let url = AppSettings.current.resolvedDataDir.appendingPathComponent("user_dict.tsv")
         if let c = try? String(contentsOf: url, encoding: .utf8) {
             parseDict(c)
         }
     }
+
+    // MARK: - 用户词典（自学习）
+
+    /// 用户词典路径：<dataDir>/learned_dict.tsv
+    /// 与 user_dict.tsv 分开 — learned 是自学习产物，user_dict.tsv 是手动维护的外部词库
+    private var userDictURL: URL? {
+        guard !AppSettings.isKeyboardExtension else { return nil }
+        return AppSettings.current.resolvedDataDir.appendingPathComponent("learned_dict.tsv")
+    }
+
+    private func loadUserDict() {
+        guard let url = userDictURL,
+              let c = try? String(contentsOf: url, encoding: .utf8) else { return }
+        for line in c.components(separatedBy: .newlines) {
+            let parts = line.components(separatedBy: "\t")
+            guard parts.count >= 2 else { continue }
+            let pinyin = parts[0].trimmingCharacters(in: .whitespaces)
+            let word = parts[1].trimmingCharacters(in: .whitespaces)
+            guard !pinyin.isEmpty, !word.isEmpty else { continue }
+            let freq = parts.count > 2 ? (Int(parts[2].trimmingCharacters(in: .whitespaces)) ?? 1) : 1
+            userEntries.append(DictEntry(pinyin: pinyin, word: word, freq: freq))
+        }
+    }
+
+    private func saveUserDict() {
+        guard let url = userDictURL else { return }
+        userDictQueue.async { [weak self] in
+            guard let self else { return }
+            let lines = self.userEntries
+                .sorted { $0.freq > $1.freq }
+                .map { "\($0.pinyin)\t\($0.word)\t\($0.freq)" }
+                .joined(separator: "\n")
+            try? lines.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// 记录一次选词（自学习入口）。
+    /// - word: 上屏的词
+    /// - pinyin: 该词的拼音（空格分隔）
+    /// 词频 +1；新词从 1 开始。内存索引实时更新，磁盘异步 debounce 写。
+    func learn(word: String, pinyin: String) {
+        guard !AppSettings.isKeyboardExtension else { return }
+        let normPinyin = pinyin.trimmingCharacters(in: .whitespaces)
+        guard !normPinyin.isEmpty, !word.isEmpty else { return }
+
+        if let idx = userEntries.firstIndex(where: { $0.word == word && $0.pinyin == normPinyin }) {
+            userEntries[idx] = DictEntry(pinyin: normPinyin, word: word, freq: userEntries[idx].freq + 1)
+        } else {
+            userEntries.append(DictEntry(pinyin: normPinyin, word: word, freq: 1))
+        }
+
+        // 更新索引（用户词典量小，全量重建代价可接受）
+        rebuildUserDictIndex()
+
+        // debounce 写盘（3 秒内多次学习合并一次）
+        userDictDirty = true
+        saveWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.userDictDirty else { return }
+            self.saveUserDict()
+            self.userDictDirty = false
+        }
+        saveWorkItem = item
+        userDictQueue.asyncAfter(deadline: .now() + 3.0, execute: item)
+    }
+
+    private func rebuildUserDictIndex() {
+        // 用户词典单独索引，查询时与内置词典合并 + 加权
+        var userByPinyin: [String: [DictEntry]] = [:]
+        var userByInitials: [String: [DictEntry]] = [:]
+        var userByFlypy: [String: [DictEntry]] = [:]
+
+        for e in userEntries {
+            userByPinyin[e.pinyin.replacingOccurrences(of: " ", with: ""), default: []].append(e)
+            userByInitials[e.initials, default: []].append(e)
+            let syls = e.pinyin.split(separator: " ").map(String.init)
+            let flypy = FlypyCodec.encode(syls)
+            if !flypy.isEmpty {
+                userByFlypy[flypy, default: []].append(e)
+            }
+        }
+
+        // 用户词典权重 = freq * 1000，确保自学习的词排在前面
+        for k in userByPinyin.keys { userByPinyin[k]?.sort { $0.freq > $1.freq } }
+        for k in userByInitials.keys { userByInitials[k]?.sort { $0.freq > $1.freq } }
+        for k in userByFlypy.keys { userByFlypy[k]?.sort { $0.freq > $1.freq } }
+
+        // 合并到主索引：用户词典条目插在前面（通过高 freq 实现排序优势）
+        // 但主索引 entries 不直接改，而是在 query 时拼接 — 更干净
+        _userByPinyin = userByPinyin
+        _userByInitials = userByInitials
+        _userByFlypy = userByFlypy
+    }
+
+    private var _userByPinyin: [String: [DictEntry]] = [:]
+    private var _userByInitials: [String: [DictEntry]] = [:]
+    private var _userByFlypy: [String: [DictEntry]] = [:]
 
     private func parseDict(_ content: String) {
         for line in content.components(separatedBy: .newlines) {
@@ -108,14 +214,24 @@ final class PinyinEngine {
 
     /// 综合查询（不含常用语）：优先全拼精确，其次简拼。
     /// scheme：全拼模式（.pinyin）用全拼/简拼；双拼/音形模式用双拼编码。
+    /// 返回结果前面会带上用户词典的条目（学过的词优先）。
     func query(_ input: String, scheme: InputScheme = .pinyin) -> [DictEntry] {
         switch scheme {
         case .pinyin:
+            let user = _userByPinyin[input.lowercased()] ?? []
             let py = searchPinyin(input)
-            return py.isEmpty ? searchInitials(input) : py
+            if user.isEmpty && py.isEmpty {
+                return _userByInitials[input.lowercased()] ?? searchInitials(input)
+            }
+            return user + py
         case .flypy, .flypyXing:
+            let user = _userByFlypy[input.lowercased()] ?? []
             let fp = searchFlypy(input)
-            return fp.isEmpty ? searchPinyin(FlypyCodec.decode(input).joined()) : fp
+            if user.isEmpty && fp.isEmpty {
+                let decoded = FlypyCodec.decode(input).joined()
+                return _userByPinyin[decoded] ?? searchPinyin(decoded)
+            }
+            return user + fp
         }
     }
 }
