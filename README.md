@@ -23,7 +23,10 @@ It frees your phrases, dictionaries, and typing habits from proprietary lock-in 
 |---|---|
 | **Input schemes** | Pinyin / **Xiaohe Shuangpin** / **Xiaohe Xingma** (switchable from menu) |
 | **Phrases first** | Key matches (your shortcut → long text) always top the candidate list |
+| **Phrase Manager** | Browse, search, add, edit, delete phrases — full manager panel on both macOS and iOS |
+| **Save from clipboard** | One-click: copy any text → save as a phrase (auto-generated key from pinyin initials) |
 | **Import phrases** | Import from other IMEs' CSV/JSON exports (format compatible) |
+| **Auto-learn** | Words you pick get promoted — the more you type, the smarter it gets |
 | **Cross-platform data** | Open formats → same data on macOS, iOS, Windows, Linux |
 | **Privacy-first** | Data directory is yours: local, cloud, or git — you choose |
 | **Gboard-inspired UI** | Clean candidate bar with Google-style blue accent and dark mode |
@@ -96,6 +99,8 @@ xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' C
 - [x] v0.1: IMK skeleton + engine + phrases + Gboard UI
 - [x] v0.2: Xiaohe Shuangpin/Xingma + cross-platform data layer + iOS keyboard extension (App Group shared data)
 - [x] User dictionary learning (auto-learn committed words) — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
+- [x] Phrase Manager panel (macOS menu bar + iOS host app, both with add/edit/delete/search)
+- [x] Save-from-clipboard one-liner + auto key generation
 - [ ] Clipboard history (cross-device)
 - [x] Full dictionary / Xingma code table import docs — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
 - [x] iOS hardware signing guide (free Apple ID supported — see [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md))

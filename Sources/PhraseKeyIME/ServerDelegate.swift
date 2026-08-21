@@ -11,6 +11,17 @@ final class PhraseKeyServerDelegate: NSObject {
     func menu() -> NSMenu! {
         let m = NSMenu(title: "PhraseKey")
 
+        // 常用语
+        let phrasesItem = NSMenuItem(title: "常用语…", action: #selector(openPhrasesPanel), keyEquivalent: "")
+        phrasesItem.target = self
+        m.addItem(phrasesItem)
+
+        let addFromClip = NSMenuItem(title: "从剪贴板添加常用语", action: #selector(addPhraseFromClipboard), keyEquivalent: "")
+        addFromClip.target = self
+        m.addItem(addFromClip)
+
+        m.addItem(.separator())
+
         // 输入方案切换
         let schemeMenu = NSMenu(title: "Input Scheme")
         for s in InputScheme.allCases {
@@ -51,6 +62,28 @@ final class PhraseKeyServerDelegate: NSObject {
 
     @objc private func openSettings() {
         SettingsWindowController.show()
+    }
+
+    @objc private func openPhrasesPanel() {
+        PhrasesPanelController.show()
+    }
+
+    @objc private func addPhraseFromClipboard() {
+        let text = NSPasteboard.general.string(forType: .string) ?? ""
+        guard !text.isEmpty else {
+            let alert = NSAlert()
+            alert.messageText = "剪贴板为空"
+            alert.informativeText = "先复制一段文字再来添加。"
+            alert.runModal()
+            return
+        }
+        // 自动生成简码：前 4 个汉字拼音首字母
+        let key = PinyinSyllable.initials(String(text.prefix(8))).prefix(4).lowercased()
+        HotwordsStore.shared.add(text: text, key: String(key))
+        let alert = NSAlert()
+        alert.messageText = "已添加常用语"
+        alert.informativeText = "简码：\(key)\n内容：\(String(text.prefix(50)))\(text.count > 50 ? "…" : "")"
+        alert.runModal()
     }
 
     @objc private func importHotwords() {

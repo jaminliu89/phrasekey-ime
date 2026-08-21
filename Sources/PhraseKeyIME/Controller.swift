@@ -110,6 +110,21 @@ final class PhraseKeyController: IMKInputController {
         reset()
     }
 
+    /// 把第 index 个候选存为常用语（不提交上屏）。
+    /// 自动生成简码 = 拼音首字母（与输入串相同则取前 4 位作 key）
+    @objc func saveAsPhrase(_ sender: Any?) {
+        // sender 可能是 NSMenuItem，tag 存候选 index
+        guard let item = sender as? NSMenuItem else { return }
+        let idx = item.tag
+        guard idx >= 0, idx < candidates.count else { return }
+        let c = candidates[idx]
+        // 自动生成简码：有 key 的保留，没有的用拼音首字母前 4 位
+        let autoKey = c.hotword?.key ?? String(PinyinSyllable.initials(c.text).prefix(4))
+        HotwordsStore.shared.add(text: c.text, key: autoKey)
+        // 存完继续显示候选，不打断输入
+        refresh()
+    }
+
     private func reset() {
         composing = ""
         candidates = []

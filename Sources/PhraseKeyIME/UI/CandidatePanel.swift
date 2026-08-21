@@ -33,6 +33,7 @@ final class CandidateBarView: NSView {
 
     static let cellHeight: CGFloat = 36
     static let cellPaddingX: CGFloat = 14
+    static let cellMaxWidth: CGFloat = 200    // 单个候选最大宽度，长文本截断
     static let cornerRadius: CGFloat = 12
     static let maxVisible = 10
 
@@ -41,6 +42,21 @@ final class CandidateBarView: NSView {
         self.selectedIndex = min(selected, max(0, self.candidates.count - 1))
         needsDisplay = true
         frame = NSRect(x: 0, y: 0, width: Self.width(for: self.candidates), height: Self.cellHeight)
+    }
+
+    /// 长文本截断显示（末尾加 …）
+    private func truncated(_ text: String, font: NSFont, maxWidth: CGFloat) -> String {
+        let ellipsis = "…"
+        let attr = [NSAttributedString.Key.font: font]
+        let ellipsisW = (ellipsis as NSString).size(withAttributes: attr).width
+        var result = ""
+        for ch in text {
+            let test = result + String(ch)
+            let w = (test as NSString).size(withAttributes: attr).width
+            if w + ellipsisW > maxWidth { break }
+            result = test
+        }
+        return result + ellipsis
     }
 
     static func width(for cands: [(String, String)]) -> CGFloat {
@@ -74,7 +90,7 @@ final class CandidateBarView: NSView {
 
         for (i, c) in candidates.enumerated() {
             let textW = (c.text as NSString).size(withAttributes: [.font: font]).width
-            let cellW = textW + Self.cellPaddingX * 2
+            let cellW = min(textW + Self.cellPaddingX * 2, Self.cellMaxWidth)
             let cellRect = NSRect(x: x, y: y + 4, width: cellW, height: h - 8)
 
             if i == selectedIndex {
@@ -91,7 +107,10 @@ final class CandidateBarView: NSView {
 
             // Text (accent color when selected, Gboard style)
             let color = i == selectedIndex ? GBoardTheme.accent : GBoardTheme.text
-            let str = NSAttributedString(string: c.text,
+            let displayText = textW > (Self.cellMaxWidth - Self.cellPaddingX * 2)
+                ? truncated(c.text, font: font, maxWidth: Self.cellMaxWidth - Self.cellPaddingX * 2 - 4)
+                : c.text
+            let str = NSAttributedString(string: displayText,
                                          attributes: [.font: font, .foregroundColor: color])
             str.draw(at: NSPoint(x: x + 16, y: y + (h - 20) / 2))
 

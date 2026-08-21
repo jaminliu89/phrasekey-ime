@@ -8,7 +8,8 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     private let tableView = NSTableView()
     private let scrollView = NSScrollView()
     private var keyField = NSTextField()
-    private var textField = NSTextField()
+    private var textView = NSTextView()  // 多行编辑器，支持大段文本
+    private var textScrollView = NSScrollView()
 
     convenience init() {
         let window = NSWindow(
@@ -93,11 +94,21 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         content.addSubview(keyField)
 
         let textLabel = NSTextField(labelWithString: "Text:")
-        textLabel.frame = NSRect(x: 184, y: 44, width: 46, height: 20)
+        textLabel.frame = NSRect(x: 184, y: 136, width: 46, height: 20)
         content.addSubview(textLabel)
-        textField.placeholderString = "your phrase text (multiline)"
-        textField.frame = NSRect(x: 232, y: 42, width: 360, height: 24)
-        content.addSubview(textField)
+        //  // 多行 NSTextView（可滚动，支持大段文本录入）
+        textScrollView.frame = NSRect(x: 232, y: 16, width: 360, height: 120)
+        textScrollView.hasVerticalScroller = true
+        textScrollView.borderType = .bezelBorder
+        textView = NSTextView(frame: textScrollView.bounds)
+        textView.font = .systemFont(ofSize: 13)
+        textView.isEditable = true
+        textView.isHorizontallyResizable = false
+        textView.isVerticallyResizable = true
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainerInset = NSSize(width: 4, height: 4)
+        textScrollView.documentView = textView
+        content.addSubview(textScrollView)
 
         let saveBtn = NSButton(title: "Save", target: self, action: #selector(saveCurrent))
         saveBtn.frame = NSRect(x: 600, y: 40, width: 104, height: 28)
@@ -119,7 +130,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     }
 
     @objc private func addPressed() {
-        store.add(text: textField.stringValue.isEmpty ? "新常用语" : textField.stringValue,
+        store.add(text: textView.string.isEmpty ? "新常用语" : textView.string,
                   key: keyField.stringValue)
         reloadData()
     }
@@ -138,7 +149,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
             addPressed(); return
         }
         store.update(id: store.items[row].hw_id,
-                     text: textField.stringValue,
+                     text: textView.string,
                      key: keyField.stringValue)
         reloadData()
     }
@@ -178,7 +189,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         let row = tableView.selectedRow
         guard row >= 0, row < store.items.count else { return }
         keyField.stringValue = store.items[row].key
-        textField.stringValue = store.items[row].text
+        textView.string = store.items[row].text
     }
 
     // MARK: - Static Entry
