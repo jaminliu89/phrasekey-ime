@@ -1,8 +1,8 @@
 import Foundation
 
-/// 常用语条目。字段与微信输入法 WeType 的 hotWordList 完全兼容：
+/// 常用语条目。字段与主流输入法常用语导出格式兼容（hotword 数组）：
 ///   {"hw_id": "毫秒时间戳", "text": "完整内容", "key": "简码"}
-/// 这样可以直接导入此前从 WeType 导出的 JSON/CSV。
+/// 这样可以直接导入其他输入法导出的 JSON/CSV。
 struct Hotword: Codable, Identifiable, Equatable {
     var hw_id: String
     var text: String
@@ -74,11 +74,11 @@ final class HotwordsStore {
         save()
     }
 
-    // MARK: - 导入（WeType 兼容）
+    // MARK: - 导入（兼容常见输入法导出格式）
 
-    /// 从 WeType 导出的 CSV 导入（utf-8-sig，列：序号,hw_id,简码,内容）
+    /// 从常见输入法导出的 CSV 导入（utf-8-sig，列：序号,hw_id,简码,内容）
     @discardableResult
-    func importFromWeTypeCSV(url: URL) -> Int {
+    func importFromCSV(url: URL) -> Int {
         guard let content = try? String(contentsOf: url, encoding: .utf8) else { return 0 }
         var count = 0
         for line in content.components(separatedBy: .newlines).dropFirst() {
@@ -95,9 +95,9 @@ final class HotwordsStore {
         return count
     }
 
-    /// 从 WeType 导出的 JSON 导入（[{hw_id,text,key},...]）
+    /// 从常见输入法导出的 JSON 导入（[{hw_id,text,key},...]）
     @discardableResult
-    func importFromWeTypeJSON(url: URL) -> Int {
+    func importFromJSON(url: URL) -> Int {
         guard let data = try? Data(contentsOf: url),
               let arr = try? JSONDecoder().decode([Hotword].self, from: data) else { return 0 }
         // 按 hw_id 去重后并入

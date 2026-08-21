@@ -142,7 +142,7 @@ final class PhraseKeyController: IMKInputController {
         let about = NSMenuItem(title: "PhraseKey 设置…", action: #selector(openSettings), keyEquivalent: "")
         about.target = self
         m.addItem(about)
-        let importItem = NSMenuItem(title: "导入 WeType 常用语…", action: #selector(importWeType), keyEquivalent: "")
+        let importItem = NSMenuItem(title: "导入常用语…", action: #selector(importHotwords), keyEquivalent: "")
         importItem.target = self
         m.addItem(importItem)
         return m
@@ -152,16 +152,16 @@ final class PhraseKeyController: IMKInputController {
         SettingsWindowController.show()
     }
 
-    @objc private func importWeType() {
+    @objc private func importHotwords() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json, .commaSeparatedText]
-        panel.message = "选择从微信输入法导出的常用语文件（CSV/JSON）"
+        panel.message = "选择从其他输入法导出的常用语文件（CSV/JSON）"
         if panel.runModal() == .OK, let url = panel.url {
             let imported: Int
             if url.pathExtension.lowercased() == "json" {
-                imported = HotwordsStore.shared.importFromWeTypeJSON(url: url)
+                imported = HotwordsStore.shared.importFromJSON(url: url)
             } else {
-                imported = HotwordsStore.shared.importFromWeTypeCSV(url: url)
+                imported = HotwordsStore.shared.importFromCSV(url: url)
             }
             let alert = NSAlert()
             alert.messageText = "导入完成"

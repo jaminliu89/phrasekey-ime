@@ -16,7 +16,7 @@
 
 | 痛点 | 商业输入法现状 | PhraseKey 方案 |
 |---|---|---|
-| **常用语/词库被锁死** | 微信/搜狗常用语私有格式，导出要逆向（剪贴板甚至 SQLCipher 加密） | 常用语开放 JSON（与 WeType hotWordList 兼容），**一条不丢直接导入** |
+| **常用语/词库被锁死** | 商业输入法常用语私有格式，导出要逆向（剪贴板甚至加密） | 常用语开放 JSON（与主流 hotword 格式兼容），**一条不丢直接导入** |
 | **跨设备不互通** | 换设备/换输入法 = 重新养词库、重新记常用语 | 数据目录开放可同步：指向 iCloud Drive/云盘/git 即多端互通 |
 | **隐私两难** | 云同步要上传，本地又不同步 | 自托管：数据 100% 在自己设备/自己的云端，格式全开放 |
 
@@ -28,7 +28,7 @@
 | **常用语优先** | 命中简码/双拼/首字母的常用语置顶，空格一键上屏长文本 |
 | 拼音引擎 | 自研轻量，跨平台汉字→拼音表（11072 字），不依赖 Apple 专属 API |
 | **常用语管理** | 设置面板增删改查（简码 + 多行文本），key 即自定义形码 |
-| **导入 WeType** | 直接导入微信输入法导出的 CSV/JSON（复用逆向成果） |
+| **导入常用语** | 直接导入其他输入法导出的 CSV/JSON（格式兼容） |
 | **跨端同步** | 数据目录可设 iCloud Drive/云盘/git；引擎平台无关（macOS→iOS→Win/Linux 复用） |
 | Google 外观 | Gboard 风格候选条：圆角卡片、Google 蓝高亮、深色适配 |
 
@@ -43,7 +43,7 @@
 │  (纯 Foundation + 内置数据表，无 AppKit/CFString)   │
 └──────────────┬──────────────────────────────────────┘
 ┌─ 数据层（开放格式，可同步）────────────────────────┐
-│  hotwords.json (WeType 兼容) · user_dict.tsv       │
+│  hotwords.json (兼容主流 hotword) · user_dict.tsv │
 │  xingma.tsv (音形码表) · config.json               │
 │  目录可指向 iCloud Drive / 云盘 / git 仓库          │
 └─────────────────────────────────────────────────────┘
@@ -56,7 +56,7 @@ bash Scripts/build_app.sh      # 构建
 bash Scripts/install.sh        # 安装到 ~/Library/Input Methods
 ```
 
-安装后：注销/重启 → 系统设置→键盘→输入法 添加「PhraseKey」→ 菜单切换方案 → 设置里导入 WeType 常用语。
+安装后：注销/重启 → 系统设置→键盘→输入法 添加「PhraseKey」→ 菜单切换方案 → 设置里导入常用语。
 
 ## 小鹤双拼 / 小鹤音形
 
@@ -66,7 +66,7 @@ bash Scripts/install.sh        # 安装到 ~/Library/Input Methods
 
 ## 数据格式（跨端互通的关键）
 
-- 常用语：`[{"hw_id":"...","text":"...","key":"..."}]`（= WeType hotWordList）
+- 常用语：`[{"hw_id":"...","text":"...","key":"..."}]`（兼容主流输入法 hotword 导出格式）
 - 词库：`全拼\t词\t词频`（dict.tsv 内置 / user_dict.tsv 用户扩展）
 - 设置：`config.json`（方案、数据目录），随数据目录同步
 - 目录：默认 `~/Library/Application Support/PhraseKey/`，可在 config.json 改到云盘目录
@@ -87,7 +87,7 @@ bash Scripts/install.sh        # 安装到 ~/Library/Input Methods
 ```
 Sources/PhraseKeyIME/    # macOS IMK 输入法（SwiftPM）
   ├── Engine/            # 平台无关引擎（拼音/双拼/音形/词库/常用语）
-  ├── Hotwords/          # 常用语存储（WeType hotWordList 兼容）
+  ├── Hotwords/          # 常用语存储（兼容主流 hotword 格式）
   ├── Settings/          # 方案/配置（config.json，可同步）
   ├── UI/                # Gboard 外观候选条
   └── Controller.swift   # IMK 主逻辑

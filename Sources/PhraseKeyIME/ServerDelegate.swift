@@ -30,7 +30,7 @@ final class PhraseKeyServerDelegate: NSObject {
         settings.target = self
         m.addItem(settings)
 
-        let importItem = NSMenuItem(title: "导入 WeType 常用语…", action: #selector(importWeType), keyEquivalent: "")
+        let importItem = NSMenuItem(title: "导入常用语…", action: #selector(importHotwords), keyEquivalent: "")
         importItem.target = self
         m.addItem(importItem)
 
@@ -53,14 +53,14 @@ final class PhraseKeyServerDelegate: NSObject {
         SettingsWindowController.show()
     }
 
-    @objc private func importWeType() {
+    @objc private func importHotwords() {
         let panel = NSOpenPanel()
         panel.allowedFileTypes = ["json", "csv"]
-        panel.message = "选择从微信输入法导出的常用语文件（CSV/JSON）"
+        panel.message = "选择从其他输入法导出的常用语文件（CSV/JSON）"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let n = url.pathExtension.lowercased() == "json"
-            ? HotwordsStore.shared.importFromWeTypeJSON(url: url)
-            : HotwordsStore.shared.importFromWeTypeCSV(url: url)
+            ? HotwordsStore.shared.importFromJSON(url: url)
+            : HotwordsStore.shared.importFromCSV(url: url)
         let alert = NSAlert()
         alert.messageText = "导入完成"
         alert.informativeText = "已导入 \(n) 条常用语。"

@@ -40,7 +40,7 @@ final class PinyinEngine {
     }
 
     /// 外部用户词库（可选）：<数据目录>/user_dict.tsv
-    /// 用户可自行放入完整词库（如雾凇/搜狗导出的词表）。数据目录可同步 → 词库多端一致。
+    /// 用户可自行放入完整词库（如通用词库导出词表）。数据目录可同步 → 词库多端一致。
     private func loadExternalDictIfAny() {
         let url = AppSettings.current.resolvedDataDir.appendingPathComponent("user_dict.tsv")
         if let c = try? String(contentsOf: url, encoding: .utf8) {

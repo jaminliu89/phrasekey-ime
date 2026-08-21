@@ -1,7 +1,7 @@
 import Cocoa
 
 /// PhraseKey 设置面板：常用语管理（Google Material 风格）。
-/// 功能：列表、添加、删除、编辑简码、导入 WeType 导出文件。
+/// 功能：列表、添加、删除、编辑简码、导入常用语导出文件。
 final class SettingsWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate {
 
     private let store = HotwordsStore.shared
@@ -45,7 +45,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         content.addSubview(schemeTip)
 
         // 顶部说明
-        let tip = NSTextField(labelWithString: "常用语 = 输入简码/拼音一键上屏的长文本。字段与微信输入法兼容。")
+        let tip = NSTextField(labelWithString: "常用语 = 输入简码/拼音一键上屏的长文本。字段与主流输入法常用语格式兼容。")
         tip.font = .systemFont(ofSize: 12)
         tip.textColor = .secondaryLabelColor
         tip.frame = NSRect(x: 16, y: 436, width: 688, height: 20)
@@ -56,7 +56,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         addBtn.frame = NSRect(x: 16, y: 396, width: 90, height: 28)
         content.addSubview(addBtn)
 
-        let importBtn = NSButton(title: "导入 WeType…", target: self, action: #selector(importPressed))
+        let importBtn = NSButton(title: "导入常用语…", target: self, action: #selector(importPressed))
         importBtn.frame = NSRect(x: 116, y: 396, width: 110, height: 28)
         content.addSubview(importBtn)
 
@@ -146,11 +146,11 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
     @objc private func importPressed() {
         let panel = NSOpenPanel()
         panel.allowedFileTypes = ["json", "csv"]
-        panel.message = "选择从微信输入法导出的常用语文件（CSV/JSON）"
+        panel.message = "选择从其他输入法导出的常用语文件（CSV/JSON）"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let n = url.pathExtension.lowercased() == "json"
-            ? store.importFromWeTypeJSON(url: url)
-            : store.importFromWeTypeCSV(url: url)
+            ? store.importFromJSON(url: url)
+            : store.importFromCSV(url: url)
         let alert = NSAlert()
         alert.messageText = "导入完成"
         alert.informativeText = "已导入 \(n) 条常用语。"
