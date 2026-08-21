@@ -19,19 +19,29 @@ final class KeyboardViewController: UIInputViewController {
     private var keyRows: [[UIButton]] = []
     private var bottomKeys: [UIButton] = []
     private var isNumberPad = false
+    private var didBuildContent = false
 
     // MARK: - 生命周期
 
     override func viewDidLoad() {
         super.viewDidLoad()
         engine = MobileEngine(scheme: .pinyin)  // 零文件访问，纯内存
+        // 弹起瞬间只做最简：背景 + 空锚点容器（与官方模板同级别的简单度，
+        // 避免加载期复杂布局导致系统放弃/闪烁）。按钮与候选条延迟到首次布局稳定后构建。
         buildUI()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        layoutFrames()
-        if !candidateButtons.isEmpty { layoutCandidates() }
+        // 键盘高度稳定后（>100pt）再构建内容，确保弹起瞬间代码路径极简
+        if !didBuildContent && view.bounds.height > 100 {
+            didBuildContent = true
+            rebuildKeys()
+        }
+        if didBuildContent {
+            layoutFrames()
+            if !candidateButtons.isEmpty { layoutCandidates() }
+        }
     }
 
     // MARK: - 构建 UI
@@ -39,7 +49,7 @@ final class KeyboardViewController: UIInputViewController {
     private func buildUI() {
         view.backgroundColor = UIColor(red: 0.784, green: 0.800, blue: 0.824, alpha: 1) // #C8CCD2
 
-        // 锚点容器：Auto Layout 填满 view（给系统尺寸锚点，无固定高度、无内部约束）
+        // 锚点容器：Auto Layout 填满 view（给系统尺寸锚点，无内部约束、不设固定高度）
         keyArea = UIView()
         keyArea.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyArea)
@@ -49,13 +59,9 @@ final class KeyboardViewController: UIInputViewController {
             keyArea.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             keyArea.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-
-        // 候选条（顶部 40，frame 布局）
-        candidateBar = UIView()
-        candidateBar.backgroundColor = .white
-        keyArea.addSubview(candidateBar)
-
-        rebuildKeys()
+        // 注意：不再给系统 view 加固定高度约束（避免与系统 root view 的 autoresizing 冲突），
+        // 高度完全交给系统，内容延迟到首次布局稳定后按实际 bounds 适配。
+        // 内容（候选条 + 按键）在首次 viewDidLayoutSubviews（高度>100）时由 rebuildKeys() 构建。
     }
 
     private func makeKey(_ title: String) -> UIButton {
