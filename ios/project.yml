@@ -1,0 +1,92 @@
+name: PhraseKeyIOS
+options:
+  bundleIdPrefix: com.phrasekey
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  # 键盘扩展：复用桌面端引擎（纯 Foundation，无 AppKit）
+  PhraseKeyKeyboard:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: PhraseKeyKeyboard
+      - path: ../Sources/PhraseKeyIME/Engine
+      - path: ../Sources/PhraseKeyIME/Hotwords
+      - path: ../Sources/PhraseKeyIME/Settings/InputScheme.swift
+      - path: ../Sources/PhraseKeyIME/Settings/PhraseKeySettings.swift
+      # 引擎资源（词库 + 汉字拼音表）
+      - path: ../Sources/PhraseKeyIME/Resources/dict.tsv
+        buildPhase: resources
+      - path: ../Sources/PhraseKeyIME/Resources/hanzi_pinyin.tsv
+        buildPhase: resources
+    info:
+      path: PhraseKeyKeyboard/Info.plist
+      properties:
+        CFBundleDisplayName: PhraseKey
+        CFBundleShortVersionString: "0.2.0"
+        CFBundleVersion: "1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.keyboard-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
+          RequestOpenAccess: true
+    entitlements:
+      path: PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.phrasekey.ime
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime.keyboard
+        PRODUCT_NAME: PhraseKeyKeyboard
+
+  # 宿主 App：引导启用 + 数据预览（嵌入键盘扩展）
+  PhraseKeyHost:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: PhraseKeyHost
+      - path: ../Sources/PhraseKeyIME/Engine
+      - path: ../Sources/PhraseKeyIME/Hotwords
+      - path: ../Sources/PhraseKeyIME/Settings/InputScheme.swift
+      - path: ../Sources/PhraseKeyIME/Settings/PhraseKeySettings.swift
+      - path: ../Sources/PhraseKeyIME/Resources/dict.tsv
+        buildPhase: resources
+      - path: ../Sources/PhraseKeyIME/Resources/hanzi_pinyin.tsv
+        buildPhase: resources
+    dependencies:
+      - target: PhraseKeyKeyboard
+        embed: true
+    info:
+      path: PhraseKeyHost/Info.plist
+      properties:
+        CFBundleDisplayName: PhraseKey
+        CFBundleShortVersionString: "0.2.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+    entitlements:
+      path: PhraseKeyHost/PhraseKeyHost.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.phrasekey.ime
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime
+        PRODUCT_NAME: PhraseKey
+
+schemes:
+  PhraseKeyHost:
+    build:
+      targets:
+        PhraseKeyHost: all
+    run:
+      config: Debug

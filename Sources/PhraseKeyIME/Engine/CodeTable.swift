@@ -15,8 +15,7 @@ final class CodeTable {
 
     private func load() {
         let urls: [URL?] = [
-            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-                .appendingPathComponent("PhraseKey/xingma.tsv"),
+            AppSettings.current.resolvedDataDir.appendingPathComponent("xingma.tsv"),
             Bundle.main.url(forResource: "xingma", withExtension: "tsv"),
         ]
         for url in urls {

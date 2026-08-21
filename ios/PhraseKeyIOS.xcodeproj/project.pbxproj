@@ -1,0 +1,561 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		08C4BF84DC6C10DB5F7F9163 /* HotwordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40A2B785186144F767B6BC2 /* HotwordsStore.swift */; };
+		09D4E14FD4457D1709AA3B15 /* hanzi_pinyin.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */; };
+		1581950ED7CF26CA0E8BAE04 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */; };
+		1B5524B9B2C81D74DC6730AF /* PhraseKeySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */; };
+		1BCBB2EFA36460E2D9D741B9 /* Searcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA70CC7277051F72C24D1BA9 /* Searcher.swift */; };
+		1E23B28E91A6FDF5F7D54F35 /* PhraseKeyKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		26D4E422CC3517A0B638B5B0 /* PinyinSyllable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF109F23059DA35897457F9 /* PinyinSyllable.swift */; };
+		2FD4415A74FAABA7207CD5B9 /* PinyinSyllable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF109F23059DA35897457F9 /* PinyinSyllable.swift */; };
+		3127606194632893BE85FEF6 /* CodeTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983453366666F51FAE68E511 /* CodeTable.swift */; };
+		4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */ = {isa = PBXBuildFile; fileRef = FBCBA1218B7F091DAC1DC45B /* dict.tsv */; };
+		801E5D2F9C43A68DC85233C0 /* FlypyCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */; };
+		8E30F1AB1F5FB6BF5632F7A4 /* PhraseKeyHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */; };
+		92701B24453B64B28D11FCC1 /* hanzi_pinyin.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */; };
+		A23AD177A72C7EA449337586 /* InputScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6CACE635DDFA07B977E85C8 /* InputScheme.swift */; };
+		A92EA3570E132D69A495DDEC /* InputScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6CACE635DDFA07B977E85C8 /* InputScheme.swift */; };
+		AC9558AFD9B55B470F5232DF /* dict.tsv in Resources */ = {isa = PBXBuildFile; fileRef = FBCBA1218B7F091DAC1DC45B /* dict.tsv */; };
+		AD26370032CD15EDA40DF47E /* Searcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA70CC7277051F72C24D1BA9 /* Searcher.swift */; };
+		B02481527259190EB7535B21 /* PinyinEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */; };
+		B5E3BCF713A9DBFACA23B790 /* HotwordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40A2B785186144F767B6BC2 /* HotwordsStore.swift */; };
+		BD82E794AE9C6B563BF9AE1F /* CodeTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983453366666F51FAE68E511 /* CodeTable.swift */; };
+		BFD310BEF3DD8C2B9427DABA /* PinyinEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */; };
+		C3736F13F4E1A06E9C8C877A /* FlypyCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */; };
+		C4CC32819B39F81584558838 /* PhraseKeySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */; };
+		CD8923294CFB64171C0BAA19 /* MobileEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 772221C86C7A70EA833093CA /* MobileEngine.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FF6ADD38B8F63159E2AEE3C8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C49FBE889029B8237732738C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 63B4FD412FA9B2BA8E7509DB;
+			remoteInfo = PhraseKeyKeyboard;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5BE3CF750AA4A793452BD6AD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1E23B28E91A6FDF5F7D54F35 /* PhraseKeyKeyboard.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		18732E1FEE66BA98941190F4 /* PhraseKeyHost.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PhraseKeyHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinEngine.swift; sourceTree = "<group>"; };
+		3E39A9C1DD839DE3BF9ED37F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeySettings.swift; sourceTree = "<group>"; };
+		5DF109F23059DA35897457F9 /* PinyinSyllable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinSyllable.swift; sourceTree = "<group>"; };
+		6D78BCEBEE2DDF976B240FFF /* PhraseKeyHost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseKeyHost.entitlements; sourceTree = "<group>"; };
+		772221C86C7A70EA833093CA /* MobileEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileEngine.swift; sourceTree = "<group>"; };
+		94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		983453366666F51FAE68E511 /* CodeTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeTable.swift; sourceTree = "<group>"; };
+		A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeyHostApp.swift; sourceTree = "<group>"; };
+		A40A2B785186144F767B6BC2 /* HotwordsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotwordsStore.swift; sourceTree = "<group>"; };
+		AD21946F78C1F685C912DB8D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B9754D9C352068BE1EC8F8D9 /* PhraseKeyKeyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseKeyKeyboard.entitlements; sourceTree = "<group>"; };
+		C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlypyCodec.swift; sourceTree = "<group>"; };
+		CA70CC7277051F72C24D1BA9 /* Searcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Searcher.swift; sourceTree = "<group>"; };
+		CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */ = {isa = PBXFileReference; path = hanzi_pinyin.tsv; sourceTree = "<group>"; };
+		D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PhraseKeyKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6CACE635DDFA07B977E85C8 /* InputScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputScheme.swift; sourceTree = "<group>"; };
+		FBCBA1218B7F091DAC1DC45B /* dict.tsv */ = {isa = PBXFileReference; path = dict.tsv; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		02DB1099FA021B3D7924D5BC /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				983453366666F51FAE68E511 /* CodeTable.swift */,
+				C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */,
+				30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */,
+				5DF109F23059DA35897457F9 /* PinyinSyllable.swift */,
+				CA70CC7277051F72C24D1BA9 /* Searcher.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		11ED1C9EE05EF9F8F8A220A4 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				BDC57ABD8EC9709C6D105FDA /* PhraseKeyIME */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		4167A4A308F2376345B1F9BE = {
+			isa = PBXGroup;
+			children = (
+				9D62389313629878F5BE12B7 /* phrasekey-ime */,
+				A061B1FD492CB877DD05003A /* PhraseKeyHost */,
+				9BF800C86349D02B884CBD0E /* PhraseKeyKeyboard */,
+				964F95734AB60E55259DBD3B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		47705E83B320F1A6908DF068 /* Hotwords */ = {
+			isa = PBXGroup;
+			children = (
+				A40A2B785186144F767B6BC2 /* HotwordsStore.swift */,
+			);
+			path = Hotwords;
+			sourceTree = "<group>";
+		};
+		964F95734AB60E55259DBD3B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				18732E1FEE66BA98941190F4 /* PhraseKeyHost.app */,
+				D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9BF800C86349D02B884CBD0E /* PhraseKeyKeyboard */ = {
+			isa = PBXGroup;
+			children = (
+				3E39A9C1DD839DE3BF9ED37F /* Info.plist */,
+				94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */,
+				772221C86C7A70EA833093CA /* MobileEngine.swift */,
+				B9754D9C352068BE1EC8F8D9 /* PhraseKeyKeyboard.entitlements */,
+			);
+			path = PhraseKeyKeyboard;
+			sourceTree = "<group>";
+		};
+		9D62389313629878F5BE12B7 /* phrasekey-ime */ = {
+			isa = PBXGroup;
+			children = (
+				11ED1C9EE05EF9F8F8A220A4 /* Sources */,
+			);
+			name = "phrasekey-ime";
+			path = ..;
+			sourceTree = "<group>";
+		};
+		A061B1FD492CB877DD05003A /* PhraseKeyHost */ = {
+			isa = PBXGroup;
+			children = (
+				AD21946F78C1F685C912DB8D /* Info.plist */,
+				6D78BCEBEE2DDF976B240FFF /* PhraseKeyHost.entitlements */,
+				A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */,
+			);
+			path = PhraseKeyHost;
+			sourceTree = "<group>";
+		};
+		BDC57ABD8EC9709C6D105FDA /* PhraseKeyIME */ = {
+			isa = PBXGroup;
+			children = (
+				02DB1099FA021B3D7924D5BC /* Engine */,
+				47705E83B320F1A6908DF068 /* Hotwords */,
+				C7851FF5C39C96DBACD7DAF6 /* Resources */,
+				E907D30996D1A7CC6310A3C6 /* Settings */,
+			);
+			path = PhraseKeyIME;
+			sourceTree = "<group>";
+		};
+		C7851FF5C39C96DBACD7DAF6 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				FBCBA1218B7F091DAC1DC45B /* dict.tsv */,
+				CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		E907D30996D1A7CC6310A3C6 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				F6CACE635DDFA07B977E85C8 /* InputScheme.swift */,
+				57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		63B4FD412FA9B2BA8E7509DB /* PhraseKeyKeyboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AD333ABEDBC3C4723C63121 /* Build configuration list for PBXNativeTarget "PhraseKeyKeyboard" */;
+			buildPhases = (
+				C960BAED1D5A46D4CD556A45 /* Sources */,
+				6E12064AFF0C94E10C599391 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PhraseKeyKeyboard;
+			packageProductDependencies = (
+			);
+			productName = PhraseKeyKeyboard;
+			productReference = D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		D5BF6DE56C16F99BA6472EDF /* PhraseKeyHost */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8986563453BC77E4911BF96D /* Build configuration list for PBXNativeTarget "PhraseKeyHost" */;
+			buildPhases = (
+				DAA6EBA5F59FA906D8DB691B /* Sources */,
+				00761A653AF5CB853E73E073 /* Resources */,
+				5BE3CF750AA4A793452BD6AD /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CDC9637BD1F98F339DB6E5B1 /* PBXTargetDependency */,
+			);
+			name = PhraseKeyHost;
+			packageProductDependencies = (
+			);
+			productName = PhraseKeyHost;
+			productReference = 18732E1FEE66BA98941190F4 /* PhraseKeyHost.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C49FBE889029B8237732738C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					63B4FD412FA9B2BA8E7509DB = {
+						ProvisioningStyle = Automatic;
+					};
+					D5BF6DE56C16F99BA6472EDF = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 304C9F732754A4CB34D303AF /* Build configuration list for PBXProject "PhraseKeyIOS" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 4167A4A308F2376345B1F9BE;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 964F95734AB60E55259DBD3B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				63B4FD412FA9B2BA8E7509DB /* PhraseKeyKeyboard */,
+				D5BF6DE56C16F99BA6472EDF /* PhraseKeyHost */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		00761A653AF5CB853E73E073 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */,
+				92701B24453B64B28D11FCC1 /* hanzi_pinyin.tsv in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6E12064AFF0C94E10C599391 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC9558AFD9B55B470F5232DF /* dict.tsv in Resources */,
+				09D4E14FD4457D1709AA3B15 /* hanzi_pinyin.tsv in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C960BAED1D5A46D4CD556A45 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3127606194632893BE85FEF6 /* CodeTable.swift in Sources */,
+				C3736F13F4E1A06E9C8C877A /* FlypyCodec.swift in Sources */,
+				B5E3BCF713A9DBFACA23B790 /* HotwordsStore.swift in Sources */,
+				A92EA3570E132D69A495DDEC /* InputScheme.swift in Sources */,
+				1581950ED7CF26CA0E8BAE04 /* KeyboardViewController.swift in Sources */,
+				CD8923294CFB64171C0BAA19 /* MobileEngine.swift in Sources */,
+				C4CC32819B39F81584558838 /* PhraseKeySettings.swift in Sources */,
+				BFD310BEF3DD8C2B9427DABA /* PinyinEngine.swift in Sources */,
+				2FD4415A74FAABA7207CD5B9 /* PinyinSyllable.swift in Sources */,
+				1BCBB2EFA36460E2D9D741B9 /* Searcher.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAA6EBA5F59FA906D8DB691B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD82E794AE9C6B563BF9AE1F /* CodeTable.swift in Sources */,
+				801E5D2F9C43A68DC85233C0 /* FlypyCodec.swift in Sources */,
+				08C4BF84DC6C10DB5F7F9163 /* HotwordsStore.swift in Sources */,
+				A23AD177A72C7EA449337586 /* InputScheme.swift in Sources */,
+				8E30F1AB1F5FB6BF5632F7A4 /* PhraseKeyHostApp.swift in Sources */,
+				1B5524B9B2C81D74DC6730AF /* PhraseKeySettings.swift in Sources */,
+				B02481527259190EB7535B21 /* PinyinEngine.swift in Sources */,
+				26D4E422CC3517A0B638B5B0 /* PinyinSyllable.swift in Sources */,
+				AD26370032CD15EDA40DF47E /* Searcher.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CDC9637BD1F98F339DB6E5B1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 63B4FD412FA9B2BA8E7509DB /* PhraseKeyKeyboard */;
+			targetProxy = FF6ADD38B8F63159E2AEE3C8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3C1BA8D8521E2E0B77AA7B71 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		684F4A39735FD58A3290F43D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements;
+				INFOPLIST_FILE = PhraseKeyKeyboard/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phrasekey.ime.keyboard;
+				PRODUCT_NAME = PhraseKeyKeyboard;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		7E60BAE635F5F66448775A3E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		879369C9895189C7F37B0561 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyHost/PhraseKeyHost.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = PhraseKeyHost/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phrasekey.ime;
+				PRODUCT_NAME = PhraseKey;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		918982601B4339E7577A0229 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements;
+				INFOPLIST_FILE = PhraseKeyKeyboard/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phrasekey.ime.keyboard;
+				PRODUCT_NAME = PhraseKeyKeyboard;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B3AC8A7B93C1E3C402A90E30 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyHost/PhraseKeyHost.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = PhraseKeyHost/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phrasekey.ime;
+				PRODUCT_NAME = PhraseKey;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2AD333ABEDBC3C4723C63121 /* Build configuration list for PBXNativeTarget "PhraseKeyKeyboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				918982601B4339E7577A0229 /* Debug */,
+				684F4A39735FD58A3290F43D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		304C9F732754A4CB34D303AF /* Build configuration list for PBXProject "PhraseKeyIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3C1BA8D8521E2E0B77AA7B71 /* Debug */,
+				7E60BAE635F5F66448775A3E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8986563453BC77E4911BF96D /* Build configuration list for PBXNativeTarget "PhraseKeyHost" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B3AC8A7B93C1E3C402A90E30 /* Debug */,
+				879369C9895189C7F37B0561 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C49FBE889029B8237732738C /* Project object */;
+}

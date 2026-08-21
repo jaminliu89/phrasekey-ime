@@ -39,11 +39,10 @@ final class PinyinEngine {
         parseDict(content)
     }
 
-    /// 外部用户词库（可选）：~/Library/Application Support/PhraseKey/user_dict.tsv
-    /// 用户可自行放入完整词库（如雾凇/搜狗导出的词表）。
+    /// 外部用户词库（可选）：<数据目录>/user_dict.tsv
+    /// 用户可自行放入完整词库（如雾凇/搜狗导出的词表）。数据目录可同步 → 词库多端一致。
     private func loadExternalDictIfAny() {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let url = dir.appendingPathComponent("PhraseKey/user_dict.tsv")
+        let url = AppSettings.current.resolvedDataDir.appendingPathComponent("user_dict.tsv")
         if let c = try? String(contentsOf: url, encoding: .utf8) {
             parseDict(c)
         }

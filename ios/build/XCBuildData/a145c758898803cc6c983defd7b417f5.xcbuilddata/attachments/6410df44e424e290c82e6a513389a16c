@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHost-primary.dia",
+    "emit-module-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHost-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHost-primary-emit-module.dia",
+    "pch" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHost-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHost-primary.swiftdeps"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/ios/PhraseKeyHost/PhraseKeyHostApp.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/x86_64/PhraseKeyHostApp~partial.swiftmodule"
+  }
+}

@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'PhraseKeyHost' in project 'PhraseKeyIOS'
+➜ Explicit dependency on target 'PhraseKeyKeyboard' in project 'PhraseKeyIOS'
+Target 'PhraseKeyKeyboard' in project 'PhraseKeyIOS' (no dependencies)

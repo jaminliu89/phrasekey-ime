@@ -13,9 +13,12 @@ struct PhraseKeySettings: Codable {
 
     // MARK: - 目录
 
-    /// 默认数据目录：~/Library/Application Support/PhraseKey
+    /// 默认数据目录：~/Library/Application Support/PhraseKey（macOS）
+    /// iOS 端启动时用 overrideDefaultDir 指向 App Group 容器，实现多端同数据
+    static var overrideDefaultDir: URL?
     static var defaultDir: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        if let d = overrideDefaultDir { return d }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("PhraseKey", isDirectory: true)
     }
 

@@ -1,0 +1,99 @@
+{
+  "" : {
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHost-primary.dia",
+    "emit-module-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHost-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHost-primary-emit-module.dia",
+    "pch" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHost-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHost-primary.swiftdeps"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Engine/CodeTable.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/CodeTable~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Engine/FlypyCodec.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/FlypyCodec~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Engine/PinyinEngine.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinEngine~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Engine/PinyinSyllable.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PinyinSyllable~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Engine/Searcher.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/Searcher~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Hotwords/HotwordsStore.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/HotwordsStore~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Settings/InputScheme.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/InputScheme~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/Sources/PhraseKeyIME/Settings/PhraseKeySettings.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeySettings~partial.swiftmodule"
+  },
+  "/Users/kimliu/Projects/phrasekey-ime/ios/PhraseKeyHost/PhraseKeyHostApp.swift" : {
+    "const-values" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.swiftconstvalues",
+    "dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.d",
+    "diagnostics" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.dia",
+    "index-unit-output-path" : "/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.o",
+    "llvm-bc" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.bc",
+    "object" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.o",
+    "swift-dependencies" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp.swiftdeps",
+    "swiftmodule" : "/Users/kimliu/Projects/phrasekey-ime/ios/build/PhraseKeyIOS.build/Debug-iphonesimulator/PhraseKeyHost.build/Objects-normal/arm64/PhraseKeyHostApp~partial.swiftmodule"
+  }
+}
