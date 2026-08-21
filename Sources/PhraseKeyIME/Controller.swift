@@ -1,0 +1,172 @@
+import Cocoa
+import InputMethodKit
+
+/// PhraseKey 输入法控制器：拼音输入状态机 + 常用语优先候选。
+///
+/// 交互设计（对齐 Google 输入法候选体验）：
+///  - 字母输入 → 累积拼音，弹候选条
+///  - 数字 1-9 → 选候选并上屏
+///  - 空格 → 上屏第一个候选（常用语一键出）
+///  - 退格 → 删拼音；回车 → 上屏拼音原文
+///  - 常用语条目带 ⌘ 角标，命中简码时直接置顶
+final class PhraseKeyController: IMKInputController {
+
+    private var composing = ""
+    private var candidates: [Searcher.Candidate] = []
+    private var selected = 0
+    private let panel = CandidatePanel()
+
+    // MARK: - 初始化
+
+    override init!(server: IMKServer!, delegate: Any!, client: Any!) {
+        super.init(server: server, delegate: delegate, client: client)
+    }
+
+    // MARK: - 按键处理
+
+    override func handle(_ event: NSEvent!, client: Any!) -> Bool {
+        guard event.type == .keyDown else { return false }
+        guard let textInput = client as? IMKTextInput else { return false }
+
+        // 系统级快捷键（Cmd 等）放行，避免拦截 cmd+space 切换
+        let mods = event.modifierFlags.intersection([.command, .control, .option])
+        guard mods.isEmpty else { return false }
+
+        guard let chars = event.charactersIgnoringModifiers, chars.count >= 1 else { return false }
+
+        if composing.isEmpty {
+            // ---- 空闲状态 ----
+            if isPinyinInput(chars) {
+                composing = chars.lowercased()
+                refresh()
+                return true
+            }
+            return false // 非拼音输入，交给系统（英文/其他输入法语义）
+        }
+
+        // ---- 输入中 ----
+        switch chars {
+        case " ":                 // 空格：上屏首选
+            commitSelected(textInput)
+            return true
+        case "\u{7F}":            // 退格
+            composing.removeLast()
+            refresh()
+            return true
+        case "\r":                // 回车：上屏拼音原文（不转中文）
+            textInput.insertText(composing, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+            reset()
+            return true
+        default:
+            if let n = Int(chars), (1...9).contains(n), candidates.count >= n {
+                commitCandidate(at: n - 1, textInput)
+                return true
+            }
+            if isPinyinInput(chars) {
+                composing += chars.lowercased()
+                refresh()
+                return true
+            }
+            // 其他字符（标点等）：先提交拼音串，再放行给系统
+            if !composing.isEmpty {
+                textInput.insertText(composing, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+                reset()
+            }
+            return false
+        }
+    }
+
+    // MARK: - 候选与提交
+
+    private func refresh() {
+        candidates = Searcher.shared.search(composing, scheme: AppSettings.current.scheme)
+        selected = 0
+        if candidates.isEmpty {
+            panel.hide()
+            return
+        }
+        let list = candidates.map { ($0.text, $0.type) }
+        panel.update(candidates: list, selected: 0, at: insertionPoint())
+    }
+
+    private func commitSelected(_ client: IMKTextInput) {
+        guard !candidates.isEmpty else {
+            // 无候选：上屏拼音原文
+            client.insertText(composing, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+            reset()
+            return
+        }
+        commitCandidate(at: selected, client)
+    }
+
+    private func commitCandidate(at index: Int, _ client: IMKTextInput) {
+        guard index < candidates.count else { return }
+        let c = candidates[index]
+        client.insertText(c.text, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+        // 常用语命中可回写排序偏好（后续可加），这里保持简单
+        reset()
+    }
+
+    private func reset() {
+        composing = ""
+        candidates = []
+        selected = 0
+        panel.hide()
+    }
+
+    // MARK: - 光标定位
+
+    /// 取输入光标锚点：直接用鼠标位置（最可靠，接近光标）；极端情况退回屏幕底部中央。
+    private func insertionPoint() -> NSPoint {
+        let mouse = NSEvent.mouseLocation
+        if let screen = NSScreen.main, screen.visibleFrame.contains(mouse) {
+            return mouse
+        }
+        if let screen = NSScreen.main {
+            return NSPoint(x: screen.visibleFrame.midX, y: screen.visibleFrame.minY + 80)
+        }
+        return mouse
+    }
+
+    // MARK: - 工具
+
+    private func isPinyinInput(_ s: String) -> Bool {
+        guard let scalar = s.unicodeScalars.first else { return false }
+        return CharacterSet.lowercaseLetters.contains(scalar)
+    }
+
+    // MARK: - 输入法菜单（右键候选/菜单栏显示）
+
+    override func menu() -> NSMenu! {
+        let m = NSMenu(title: "PhraseKey")
+        let about = NSMenuItem(title: "PhraseKey 设置…", action: #selector(openSettings), keyEquivalent: "")
+        about.target = self
+        m.addItem(about)
+        let importItem = NSMenuItem(title: "导入 WeType 常用语…", action: #selector(importWeType), keyEquivalent: "")
+        importItem.target = self
+        m.addItem(importItem)
+        return m
+    }
+
+    @objc private func openSettings() {
+        SettingsWindowController.show()
+    }
+
+    @objc private func importWeType() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json, .commaSeparatedText]
+        panel.message = "选择从微信输入法导出的常用语文件（CSV/JSON）"
+        if panel.runModal() == .OK, let url = panel.url {
+            let imported: Int
+            if url.pathExtension.lowercased() == "json" {
+                imported = HotwordsStore.shared.importFromWeTypeJSON(url: url)
+            } else {
+                imported = HotwordsStore.shared.importFromWeTypeCSV(url: url)
+            }
+            let alert = NSAlert()
+            alert.messageText = "导入完成"
+            alert.informativeText = "已导入 \(imported) 条常用语。"
+            alert.runModal()
+        }
+    }
+}

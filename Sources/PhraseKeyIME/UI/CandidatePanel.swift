@@ -1,0 +1,150 @@
+import Cocoa
+
+/// Google Gboard 外观主题色。
+enum GBoardTheme {
+    // 浅色
+    static let bgLight        = NSColor(calibratedRed: 1.00, green: 1.00, blue: 1.00, alpha: 1.00)   // #FFFFFF
+    static let highlightBgLight = NSColor(calibratedRed: 0.91, green: 0.94, blue: 0.99, alpha: 1.00) // #E8F0FE
+    static let accentLight    = NSColor(calibratedRed: 0.26, green: 0.52, blue: 0.96, alpha: 1.00)   // #4285F4
+    static let textLight      = NSColor(calibratedWhite: 0.10, alpha: 1.00)
+    static let subLight       = NSColor(calibratedWhite: 0.45, alpha: 1.00)
+
+    // 深色
+    static let bgDark         = NSColor(calibratedRed: 0.17, green: 0.17, blue: 0.18, alpha: 1.00)   // #2C2C2E
+    static let highlightBgDark = NSColor(calibratedRed: 0.24, green: 0.25, blue: 0.27, alpha: 1.00)  // #3C4043
+    static let accentDark     = NSColor(calibratedRed: 0.54, green: 0.71, blue: 0.97, alpha: 1.00)   // #8AB4F8
+    static let textDark       = NSColor(calibratedWhite: 0.92, alpha: 1.00)
+    static let subDark        = NSColor(calibratedWhite: 0.60, alpha: 1.00)
+
+    static var isDark: Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+    static var bg: NSColor { isDark ? bgDark : bgLight }
+    static var highlightBg: NSColor { isDark ? highlightBgDark : highlightBgLight }
+    static var accent: NSColor { isDark ? accentDark : accentLight }
+    static var text: NSColor { isDark ? textDark : textLight }
+    static var sub: NSColor { isDark ? subDark : subLight }
+}
+
+/// 候选条内容视图：自绘 Google 风格（圆角卡片 + 高亮块 + 序号 + 类型角标）。
+final class CandidateBarView: NSView {
+    var candidates: [(text: String, type: String)] = []
+    var selectedIndex = 0
+
+    static let cellHeight: CGFloat = 36
+    static let cellPaddingX: CGFloat = 14
+    static let cornerRadius: CGFloat = 12
+    static let maxVisible = 10
+
+    func configure(candidates: [(String, String)], selected: Int) {
+        self.candidates = Array(candidates.prefix(Self.maxVisible))
+        self.selectedIndex = min(selected, max(0, self.candidates.count - 1))
+        needsDisplay = true
+        let count = CGFloat(self.candidates.count)
+        frame = NSRect(x: 0, y: 0, width: Self.width(for: self.candidates), height: Self.cellHeight)
+    }
+
+    static func width(for cands: [(String, String)]) -> CGFloat {
+        guard !cands.isEmpty else { return 60 }
+        var w: CGFloat = 16
+        for c in cands.prefix(maxVisible) {
+            let attr = [NSAttributedString.Key.font: NSFont.systemFont(ofSize: 16, weight: .medium)]
+            w += (c.0 as NSString).size(withAttributes: attr).width + Self.cellPaddingX * 2 + 6
+        }
+        return min(w, 720)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard !candidates.isEmpty else { return }
+        let w = bounds.width
+        // 背景圆角卡片
+        let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1),
+                              xRadius: Self.cornerRadius, yRadius: Self.cornerRadius)
+        GBoardTheme.bg.setFill()
+        bg.fill()
+        // 细边框
+        NSColor.black.withAlphaComponent(0.08).setStroke()
+        bg.lineWidth = 1
+        bg.stroke()
+
+        // 逐候选绘制
+        var x: CGFloat = 8
+        let y: CGFloat = 0
+        let h = Self.cellHeight
+        let font = NSFont.systemFont(ofSize: 16, weight: .medium)
+        let subFont = NSFont.systemFont(ofSize: 9, weight: .semibold)
+
+        for (i, c) in candidates.enumerated() {
+            let textW = (c.text as NSString).size(withAttributes: [.font: font]).width
+            let cellW = textW + Self.cellPaddingX * 2
+            let cellRect = NSRect(x: x, y: y + 4, width: cellW, height: h - 8)
+
+            if i == selectedIndex {
+                let hl = NSBezierPath(roundedRect: cellRect, xRadius: 8, yRadius: 8)
+                GBoardTheme.highlightBg.setFill()
+                hl.fill()
+            }
+
+            // 序号（选中时显示 Google 蓝）
+            let numColor = i == selectedIndex ? GBoardTheme.accent : GBoardTheme.sub
+            let numStr = NSAttributedString(string: "\(i + 1)",
+                                            attributes: [.font: subFont, .foregroundColor: numColor])
+            numStr.draw(at: NSPoint(x: x + 5, y: y + (h - 10) / 2))
+
+            // 文本（选中用 accent 色，符合 Gboard 选中高亮）
+            let color = i == selectedIndex ? GBoardTheme.accent : GBoardTheme.text
+            let str = NSAttributedString(string: c.text,
+                                         attributes: [.font: font, .foregroundColor: color])
+            str.draw(at: NSPoint(x: x + 16, y: y + (h - 20) / 2))
+
+            // 类型角标：hotword 显示 ⌘ 标记（常用语）
+            if c.type == "hotword" {
+                let badge = "⌘"
+                let badgeStr = NSAttributedString(string: badge,
+                                                  attributes: [.font: subFont, .foregroundColor: GBoardTheme.sub])
+                badgeStr.draw(at: NSPoint(x: x + cellW - 14, y: y + (h - 12) / 2))
+            }
+
+            x += cellW
+        }
+    }
+}
+
+/// 候选窗：无边框浮动 NSPanel，跟随输入光标。
+final class CandidatePanel: NSPanel {
+    private let barView = CandidateBarView()
+
+    init() {
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 200, height: CandidateBarView.cellHeight),
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered,
+                   defer: false)
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = true
+        level = .floating
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        isReleasedWhenClosed = false
+        contentView = barView
+    }
+
+    /// 更新并显示候选。
+    func update(candidates: [(String, String)], selected: Int, at screenPoint: NSPoint) {
+        guard !candidates.isEmpty else { hide(); return }
+        barView.configure(candidates: candidates, selected: selected)
+        let w = barView.frame.width
+        let h = CandidateBarView.cellHeight
+        // 定位：默认放在光标右下（下方），超屏幕则上移
+        var origin = NSPoint(x: screenPoint.x, y: screenPoint.y - h - 6)
+        if let screen = NSScreen.main {
+            if origin.x + w > screen.visibleFrame.maxX { origin.x = screen.visibleFrame.maxX - w - 8 }
+            if origin.y < screen.visibleFrame.minY { origin.y = screenPoint.y + 8 }
+        }
+        setFrame(NSRect(origin: origin, size: NSSize(width: w, height: h)), display: true)
+        orderFrontRegardless()
+    }
+
+    func hide() {
+        orderOut(nil)
+    }
+}

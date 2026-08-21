@@ -1,0 +1,19 @@
+# SwiftPM
+.build/
+.swiftpm/
+
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcodeproj/xcuserdata/
+
+# 构建产物
+dist/
+*.app
+
+# macOS
+.DS_Store
+
+# 本地数据（不进库）
+*.icns.tmp
