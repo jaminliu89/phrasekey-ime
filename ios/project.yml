@@ -38,9 +38,12 @@ targets:
         CFBundleShortVersionString: "0.2.0"
         CFBundleVersion: "1"
         NSExtension:
+          NSExtensionAttributes:
+            # 必须放在 NSExtensionAttributes 下，系统才会显示「允许完全访问」开关；
+            # 放错层级 = 开关不出现 = 键盘受限沙盒运行 = 访问 App Group 崩溃
+            RequestOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
-          RequestOpenAccess: true
     entitlements:
       path: PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements
       properties:
@@ -50,6 +53,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime.keyboard
         PRODUCT_NAME: PhraseKeyKeyboard
+        # 关键：键盘扩展必须关闭 Debug Dylib（ENABLE_DEBUG_DYLIB）。
+        # Debug 模式的 debug.dylib 会让主可执行变成 stub，符号不在里面，
+        # 系统加载扩展时找不到 NSExtensionPrincipalClass → 键盘加载失败被跳过（真机表现为闪退）。
+        ENABLE_DEBUG_DYLIB: NO
 
   # 宿主 App：引导启用 + 数据预览（嵌入键盘扩展）
   PhraseKeyHost:
@@ -88,6 +95,21 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime
         PRODUCT_NAME: PhraseKey
 
+  # UI 测试：验证键盘扩展在系统设置中的注册状态（诊断用）
+  PhraseKeyKeyboardUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: PhraseKeyKeyboardUITests
+    dependencies:
+      - target: PhraseKeyHost
+    settings:
+      base:
+        TEST_TARGET_NAME: PhraseKeyHost
+        PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime.uitests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   PhraseKeyHost:
     build:
@@ -95,3 +117,7 @@ schemes:
         PhraseKeyHost: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - PhraseKeyKeyboardUITests

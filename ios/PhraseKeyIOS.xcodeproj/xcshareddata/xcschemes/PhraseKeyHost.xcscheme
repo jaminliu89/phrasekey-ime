@@ -37,6 +37,16 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3EDFC7618989BB658648652B"
+               BuildableName = "PhraseKeyKeyboardUITests.xctest"
+               BlueprintName = "PhraseKeyKeyboardUITests"
+               ReferencedContainer = "container:PhraseKeyIOS.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

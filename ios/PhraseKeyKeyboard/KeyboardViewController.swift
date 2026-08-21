@@ -17,21 +17,20 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // App Group 数据容器（与 macOS/宿主共享 hotwords.json 等）
+        // 未开启「允许完全访问」时容器不可用：优雅降级到本地沙盒目录，绝不能崩溃
         if let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.phrasekey.ime") {
             PhraseKeySettings.overrideDefaultDir = container.appendingPathComponent("PhraseKey")
-            AppSettings.current = PhraseKeySettings.load()
         }
+        AppSettings.current = PhraseKeySettings.load()
         engine = MobileEngine(scheme: AppSettings.current.scheme)
         buildUI()
     }
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-        // 键盘高约 40% 屏幕
-        let h = view.bounds.height
-        if let constraint = view.constraints.first(where: { $0.firstAttribute == .height }) {
-            constraint.constant = max(216, h * 0.42)
-        }
+        // 键盘高度交给系统管理。
+        // 不要在布局回调里修改高度约束：每次改约束都会触发新的布局，
+        // 形成死循环导致键盘界面不断重绘闪烁。
     }
 
     // MARK: - 构建 UI

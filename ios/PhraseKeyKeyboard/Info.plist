@@ -22,12 +22,15 @@
 	<string>1</string>
 	<key>NSExtension</key>
 	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>RequestOpenAccess</key>
+			<true/>
+		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.keyboard-service</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).KeyboardViewController</string>
-		<key>RequestOpenAccess</key>
-		<true/>
 	</dict>
 </dict>
 </plist>

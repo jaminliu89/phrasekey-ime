@@ -18,6 +18,7 @@
 		3127606194632893BE85FEF6 /* CodeTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983453366666F51FAE68E511 /* CodeTable.swift */; };
 		48548C3EF688FD2CEC7ACC15 /* PhraseKey.svg in Resources */ = {isa = PBXBuildFile; fileRef = 30E2B282467E45F52CE61141 /* PhraseKey.svg */; };
 		4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */ = {isa = PBXBuildFile; fileRef = FBCBA1218B7F091DAC1DC45B /* dict.tsv */; };
+		52DB52F2EBCCABD896EB7D43 /* PhraseKeyKeyboardUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9B1A83C106B0FDC9AC57E0 /* PhraseKeyKeyboardUITests.swift */; };
 		801E5D2F9C43A68DC85233C0 /* FlypyCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */; };
 		8E30F1AB1F5FB6BF5632F7A4 /* PhraseKeyHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */; };
 		92701B24453B64B28D11FCC1 /* hanzi_pinyin.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */; };
@@ -35,6 +36,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		B956AE72903479DFB2427657 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C49FBE889029B8237732738C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D5BF6DE56C16F99BA6472EDF;
+			remoteInfo = PhraseKeyHost;
+		};
 		FF6ADD38B8F63159E2AEE3C8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C49FBE889029B8237732738C /* Project object */;
@@ -59,6 +67,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0A9B1A83C106B0FDC9AC57E0 /* PhraseKeyKeyboardUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeyKeyboardUITests.swift; sourceTree = "<group>"; };
 		18732E1FEE66BA98941190F4 /* PhraseKeyHost.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PhraseKeyHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinEngine.swift; sourceTree = "<group>"; };
 		30E2B282467E45F52CE61141 /* PhraseKey.svg */ = {isa = PBXFileReference; path = PhraseKey.svg; sourceTree = "<group>"; };
@@ -77,6 +86,7 @@
 		CA70CC7277051F72C24D1BA9 /* Searcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Searcher.swift; sourceTree = "<group>"; };
 		CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */ = {isa = PBXFileReference; path = hanzi_pinyin.tsv; sourceTree = "<group>"; };
 		D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PhraseKeyKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E59746F0D51D25090AE107C5 /* PhraseKeyKeyboardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PhraseKeyKeyboardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6CACE635DDFA07B977E85C8 /* InputScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputScheme.swift; sourceTree = "<group>"; };
 		FBCBA1218B7F091DAC1DC45B /* dict.tsv */ = {isa = PBXFileReference; path = dict.tsv; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -108,6 +118,7 @@
 				9D62389313629878F5BE12B7 /* phrasekey-ime */,
 				A061B1FD492CB877DD05003A /* PhraseKeyHost */,
 				9BF800C86349D02B884CBD0E /* PhraseKeyKeyboard */,
+				A474D2D8E70825A5CF45E7CB /* PhraseKeyKeyboardUITests */,
 				964F95734AB60E55259DBD3B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -125,6 +136,7 @@
 			children = (
 				18732E1FEE66BA98941190F4 /* PhraseKeyHost.app */,
 				D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */,
+				E59746F0D51D25090AE107C5 /* PhraseKeyKeyboardUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -158,6 +170,14 @@
 				A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */,
 			);
 			path = PhraseKeyHost;
+			sourceTree = "<group>";
+		};
+		A474D2D8E70825A5CF45E7CB /* PhraseKeyKeyboardUITests */ = {
+			isa = PBXGroup;
+			children = (
+				0A9B1A83C106B0FDC9AC57E0 /* PhraseKeyKeyboardUITests.swift */,
+			);
+			path = PhraseKeyKeyboardUITests;
 			sourceTree = "<group>";
 		};
 		A8DAC9BDA541BD131545193C /* BrandAssets */ = {
@@ -200,6 +220,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3EDFC7618989BB658648652B /* PhraseKeyKeyboardUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 05D26AA6D6E07061BF4C9D55 /* Build configuration list for PBXNativeTarget "PhraseKeyKeyboardUITests" */;
+			buildPhases = (
+				4A716B13DCC59FE24F25C546 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				85B328ACE2AA70BA3E794DDB /* PBXTargetDependency */,
+			);
+			name = PhraseKeyKeyboardUITests;
+			packageProductDependencies = (
+			);
+			productName = PhraseKeyKeyboardUITests;
+			productReference = E59746F0D51D25090AE107C5 /* PhraseKeyKeyboardUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		63B4FD412FA9B2BA8E7509DB /* PhraseKeyKeyboard */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2AD333ABEDBC3C4723C63121 /* Build configuration list for PBXNativeTarget "PhraseKeyKeyboard" */;
@@ -247,6 +285,11 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					3EDFC7618989BB658648652B = {
+						DevelopmentTeam = 63PZWHLKMU;
+						ProvisioningStyle = Automatic;
+						TestTargetID = D5BF6DE56C16F99BA6472EDF;
+					};
 					63B4FD412FA9B2BA8E7509DB = {
 						DevelopmentTeam = 63PZWHLKMU;
 						ProvisioningStyle = Automatic;
@@ -273,6 +316,7 @@
 			targets = (
 				63B4FD412FA9B2BA8E7509DB /* PhraseKeyKeyboard */,
 				D5BF6DE56C16F99BA6472EDF /* PhraseKeyHost */,
+				3EDFC7618989BB658648652B /* PhraseKeyKeyboardUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -300,6 +344,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4A716B13DCC59FE24F25C546 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				52DB52F2EBCCABD896EB7D43 /* PhraseKeyKeyboardUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C960BAED1D5A46D4CD556A45 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -336,6 +388,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		85B328ACE2AA70BA3E794DDB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D5BF6DE56C16F99BA6472EDF /* PhraseKeyHost */;
+			targetProxy = B956AE72903479DFB2427657 /* PBXContainerItemProxy */;
+		};
 		CDC9637BD1F98F339DB6E5B1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 63B4FD412FA9B2BA8E7509DB /* PhraseKeyKeyboard */;
@@ -409,10 +466,47 @@
 			};
 			name = Debug;
 		};
+		57E5B54FF147C4F281F0E823 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phrasekey.ime.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PhraseKeyHost;
+			};
+			name = Debug;
+		};
+		60F17948316AA44C70F7C1D8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phrasekey.ime.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PhraseKeyHost;
+			};
+			name = Release;
+		};
 		684F4A39735FD58A3290F43D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements;
+				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = PhraseKeyKeyboard/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -508,6 +602,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements;
+				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = PhraseKeyKeyboard/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -544,6 +639,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		05D26AA6D6E07061BF4C9D55 /* Build configuration list for PBXNativeTarget "PhraseKeyKeyboardUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57E5B54FF147C4F281F0E823 /* Debug */,
+				60F17948316AA44C70F7C1D8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		2AD333ABEDBC3C4723C63121 /* Build configuration list for PBXNativeTarget "PhraseKeyKeyboard" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
