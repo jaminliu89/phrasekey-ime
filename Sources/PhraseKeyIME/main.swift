@@ -1,8 +1,8 @@
 import Cocoa
 import InputMethodKit
 
-// PhraseKey IME 进程入口：启动 IMKServer 并常驻 RunLoop。
-// 输入法由系统以 IMKServer 方式拉起，本进程提供控制器与候选 UI。
+// PhraseKey IME process entry: starts IMKServer and stays in RunLoop.
+// The system launches this process as an IMKServer, providing the controller and candidate UI.
 
 let connectionName = "PhraseKey_Connection"
 

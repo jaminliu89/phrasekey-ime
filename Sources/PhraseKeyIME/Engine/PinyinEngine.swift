@@ -1,6 +1,6 @@
 import Foundation
 
-/// 词库条目
+/// Dictionary entry
 struct DictEntry {
     let pinyin: String   // 全拼（无调，空格分隔，如 "ni hao"）
     let word: String     // 词
@@ -8,7 +8,7 @@ struct DictEntry {
     var initials: String { pinyin.split(separator: " ").map { String($0.first!) }.joined() }
 }
 
-/// 拼音引擎：加载词库，提供全拼 / 简拼查询。
+/// Pinyin engine: loads dictionary, provides full pinyin / initials / shuangpin queries.
 final class PinyinEngine {
     static let shared = PinyinEngine()
 
@@ -23,9 +23,9 @@ final class PinyinEngine {
         buildIndex()
     }
 
-    // MARK: - 词库加载
+    // MARK: - Dictionary Loading
 
-    /// 内置词库（Resources/dict.tsv）：格式 `全拼\t词\t词频`
+    /// Built-in dict (Resources/dict.tsv): format `pinyin\tword\tfrequency`
     private func loadBuiltinDict() {
         guard let url = Bundle.main.url(forResource: "dict", withExtension: "tsv"),
               let content = try? String(contentsOf: url, encoding: .utf8) else {
@@ -39,8 +39,8 @@ final class PinyinEngine {
         parseDict(content)
     }
 
-    /// 外部用户词库（可选）：<数据目录>/user_dict.tsv
-    /// 用户可自行放入完整词库（如通用词库导出词表）。数据目录可同步 → 词库多端一致。
+    /// External user dict (optional): <dataDir>/user_dict.tsv
+    /// Users can add full custom dictionaries. Syncs via shared data directory.
     private func loadExternalDictIfAny() {
         let url = AppSettings.current.resolvedDataDir.appendingPathComponent("user_dict.tsv")
         if let c = try? String(contentsOf: url, encoding: .utf8) {
@@ -77,7 +77,7 @@ final class PinyinEngine {
         for k in byFlypy.keys { byFlypy[k]?.sort { $0.freq > $1.freq } }
     }
 
-    // MARK: - 查询
+    // MARK: - Query
 
     struct Result {
         let text: String

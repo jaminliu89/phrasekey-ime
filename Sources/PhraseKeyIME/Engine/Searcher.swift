@@ -1,13 +1,13 @@
 import Foundation
 
-/// 综合搜索器：把「常用语」与「拼音词库」融合成一个候选列表。
-/// 排序优先级（差异化核心：常用语永远压过普通词）：
-///   1. 常用语·简码精确命中（所有方案，key 即用户自定义形码）
-///   2. 常用语·简码前缀
-///   3. 词库·全拼精确 / 双拼精确
-///   4. 常用语·文本拼音首字母 / 双拼编码
-///   5. 词库·简拼
-///   6. 常用语·文本子串
+/// Combined searcher: merges phrases and pinyin dictionary into one candidate list.
+/// Ranking (differentiator: phrases always beat dictionary words):
+///   1. Phrase·key exact match (all schemes, key = user's personal shape code)
+///   2. Phrase·key prefix
+///   3. Dictionary·full pinyin exact / shuangpin exact
+///   4. Phrase·pinyin initials / shuangpin code
+///   5. Dictionary·initial pinyin
+///   6. Phrase·text substring
 final class Searcher {
     static let shared = Searcher()
 
@@ -19,7 +19,7 @@ final class Searcher {
         let hotword: Hotword?
     }
 
-    /// 综合搜索。scheme：全拼/小鹤双拼/小鹤音形。
+    /// Combined search. scheme: pinyin / xiaohe shuangpin / xiaohe xingma.
     func search(_ input: String, scheme: InputScheme = .pinyin) -> [Candidate] {
         let norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !norm.isEmpty else { return [] }
@@ -69,9 +69,9 @@ final class Searcher {
         return best.values.sorted { $0.score > $1.score }.prefix(50).map { $0 }
     }
 
-    /// 音形过滤：双拼部分已出候选后，用剩余形码键过滤。
-    /// 规则：输入串 = 双拼(2·字数) + 形码(1~2)。当输入长度超过双拼长度时，
-    /// 多出的键作为形码前缀；候选逐字匹配形码。未装码表则退化为双拼。
+    /// Xingma filter: after shuangpin candidates are produced, filter by remaining shape-code keys.
+    /// Rule: input = shuangpin(2·wordLen) + xingma(1~2). When input exceeds shuangpin length,
+    /// extra keys are shape-code prefix; candidates matched per-character. Falls back to shuangpin if no table.
     private func applyXingmaFilter(_ cands: [Candidate], input: String) -> [Candidate] {
         let codeTable = CodeTable.shared
         guard codeTable.hasLoaded else { return cands } // 未装码表 → 退化为双拼
@@ -82,7 +82,6 @@ final class Searcher {
         for len in [1, 2] where chars.count - len >= 2 {
             let flypyLen = chars.count - len
             guard flypyLen.isMultiple(of: 2) else { continue }
-            let flypyPart = String(chars[0..<flypyLen])
             let xingPart = String(chars[flypyLen...])
             guard !xingPart.isEmpty else { continue }
             let filtered = cands.filter { codeTable.matches(word: $0.text, xingPrefix: xingPart) }

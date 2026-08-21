@@ -1,10 +1,10 @@
 import Cocoa
 import InputMethodKit
 
-/// IMKServer 委托：提供输入法菜单（右键候选/输入法栏可见）。
-/// Info.plist 的 InputMethodServerDelegateClass 指向本类。
-/// 注：IMKServerDelegate 在 Swift 中不可见，系统通过 ObjC 动态派发调用 menu()，
-///     故这里仅继承 NSObject 并暴露 @objc 方法。
+/// IMKServer delegate: provides the IME menu (right-click / menu bar).
+/// Referenced by Info.plist InputMethodServerDelegateClass.
+/// Note: IMKServerDelegate is not exposed in Swift; the system calls menu()
+///       via ObjC dynamic dispatch, so we just subclass NSObject + @objc methods.
 final class PhraseKeyServerDelegate: NSObject {
 
     /// 输入法菜单（显示在输入法切换栏/候选窗右键）
@@ -12,7 +12,7 @@ final class PhraseKeyServerDelegate: NSObject {
         let m = NSMenu(title: "PhraseKey")
 
         // 输入方案切换
-        let schemeMenu = NSMenu(title: "输入方案")
+        let schemeMenu = NSMenu(title: "Input Scheme")
         for s in InputScheme.allCases {
             let item = NSMenuItem(title: s.rawValue, action: #selector(switchScheme(_:)), keyEquivalent: "")
             item.tag = InputScheme.allCases.firstIndex(of: s) ?? 0
@@ -20,13 +20,13 @@ final class PhraseKeyServerDelegate: NSObject {
             item.target = self
             schemeMenu.addItem(item)
         }
-        let schemeItem = NSMenuItem(title: "输入方案", action: nil, keyEquivalent: "")
+        let schemeItem = NSMenuItem(title: "Input Scheme", action: nil, keyEquivalent: "")
         schemeItem.submenu = schemeMenu
         m.addItem(schemeItem)
 
         m.addItem(.separator())
 
-        let settings = NSMenuItem(title: "PhraseKey 设置…", action: #selector(openSettings), keyEquivalent: "")
+        let settings = NSMenuItem(title: "PhraseKey Settings…", action: #selector(openSettings), keyEquivalent: "")
         settings.target = self
         m.addItem(settings)
 
@@ -36,7 +36,7 @@ final class PhraseKeyServerDelegate: NSObject {
 
         m.addItem(.separator())
 
-        let about = NSMenuItem(title: "PhraseKey IME · 开源 · 常用语优先", action: nil, keyEquivalent: "")
+        let about = NSMenuItem(title: "PhraseKey IME · Open Source · Phrases First", action: nil, keyEquivalent: "")
         m.addItem(about)
 
         return m
@@ -55,15 +55,15 @@ final class PhraseKeyServerDelegate: NSObject {
 
     @objc private func importHotwords() {
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = ["json", "csv"]
-        panel.message = "选择从其他输入法导出的常用语文件（CSV/JSON）"
+        panel.allowedContentTypes = [.json, .commaSeparatedText]
+        panel.message = "Select phrase export file from another IME (CSV/JSON)"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let n = url.pathExtension.lowercased() == "json"
             ? HotwordsStore.shared.importFromJSON(url: url)
             : HotwordsStore.shared.importFromCSV(url: url)
         let alert = NSAlert()
-        alert.messageText = "导入完成"
-        alert.informativeText = "已导入 \(n) 条常用语。"
+        alert.messageText = "Import Complete"
+        alert.informativeText = "Imported \(n) phrases."
         alert.runModal()
     }
 }

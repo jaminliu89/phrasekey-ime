@@ -22,12 +22,16 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/PhraseKeyIME"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
-# 资源：词库（无论 SwiftPM bundle 是否生成，都直接复制源码资源）
+# 资源：词库 + 拼音表 + 图标（无论 SwiftPM bundle 是否生成，直接复制源码资源）
 for RES in dict.tsv hanzi_pinyin.tsv; do
   if [ -f "$ROOT/Sources/PhraseKeyIME/Resources/$RES" ]; then
     cp "$ROOT/Sources/PhraseKeyIME/Resources/$RES" "$APP/Contents/Resources/$RES"
   fi
 done
+# 品牌图标
+if [ -f "$ROOT/BrandAssets/PhraseKey.icns" ]; then
+  cp "$ROOT/BrandAssets/PhraseKey.icns" "$APP/Contents/Resources/PhraseKey.icns"
+fi
 # 图标（可选）
 if [ -f "$ROOT/Resources/icon.icns" ]; then
   cp "$ROOT/Resources/icon.icns" "$APP/Contents/Resources/icon.icns"

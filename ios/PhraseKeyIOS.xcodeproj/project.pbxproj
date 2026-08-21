@@ -16,6 +16,7 @@
 		26D4E422CC3517A0B638B5B0 /* PinyinSyllable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF109F23059DA35897457F9 /* PinyinSyllable.swift */; };
 		2FD4415A74FAABA7207CD5B9 /* PinyinSyllable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF109F23059DA35897457F9 /* PinyinSyllable.swift */; };
 		3127606194632893BE85FEF6 /* CodeTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983453366666F51FAE68E511 /* CodeTable.swift */; };
+		48548C3EF688FD2CEC7ACC15 /* PhraseKey.svg in Resources */ = {isa = PBXBuildFile; fileRef = 30E2B282467E45F52CE61141 /* PhraseKey.svg */; };
 		4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */ = {isa = PBXBuildFile; fileRef = FBCBA1218B7F091DAC1DC45B /* dict.tsv */; };
 		801E5D2F9C43A68DC85233C0 /* FlypyCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */; };
 		8E30F1AB1F5FB6BF5632F7A4 /* PhraseKeyHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */; };
@@ -60,6 +61,7 @@
 /* Begin PBXFileReference section */
 		18732E1FEE66BA98941190F4 /* PhraseKeyHost.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PhraseKeyHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinEngine.swift; sourceTree = "<group>"; };
+		30E2B282467E45F52CE61141 /* PhraseKey.svg */ = {isa = PBXFileReference; path = PhraseKey.svg; sourceTree = "<group>"; };
 		3E39A9C1DD839DE3BF9ED37F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeySettings.swift; sourceTree = "<group>"; };
 		5DF109F23059DA35897457F9 /* PinyinSyllable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinSyllable.swift; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 		9D62389313629878F5BE12B7 /* phrasekey-ime */ = {
 			isa = PBXGroup;
 			children = (
+				A8DAC9BDA541BD131545193C /* BrandAssets */,
 				11ED1C9EE05EF9F8F8A220A4 /* Sources */,
 			);
 			name = "phrasekey-ime";
@@ -155,6 +158,14 @@
 				A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */,
 			);
 			path = PhraseKeyHost;
+			sourceTree = "<group>";
+		};
+		A8DAC9BDA541BD131545193C /* BrandAssets */ = {
+			isa = PBXGroup;
+			children = (
+				30E2B282467E45F52CE61141 /* PhraseKey.svg */,
+			);
+			path = BrandAssets;
 			sourceTree = "<group>";
 		};
 		BDC57ABD8EC9709C6D105FDA /* PhraseKeyIME */ = {
@@ -269,6 +280,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				48548C3EF688FD2CEC7ACC15 /* PhraseKey.svg in Resources */,
 				4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */,
 				92701B24453B64B28D11FCC1 /* hanzi_pinyin.tsv in Resources */,
 			);

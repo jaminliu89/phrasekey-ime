@@ -17,8 +17,8 @@ struct Hotword: Codable, Identifiable, Equatable {
     }
 }
 
-/// 常用语仓库：JSON 持久化 + 增删改查 + 搜索 + 导入。
-/// 存储位置：~/Library/Application Support/PhraseKey/hotwords.json
+/// Phrase store: JSON persistence + CRUD + search + import.
+/// Storage: ~/Library/Application Support/PhraseKey/hotwords.json
 final class HotwordsStore {
     static let shared = HotwordsStore()
 
@@ -32,7 +32,7 @@ final class HotwordsStore {
         load()
     }
 
-    // MARK: - 持久化
+    // MARK: - Persistence
 
     func load() {
         guard let data = try? Data(contentsOf: fileURL),
@@ -111,7 +111,7 @@ final class HotwordsStore {
         return count
     }
 
-    // MARK: - 搜索
+    // MARK: - Search
 
     enum SearchType {
         case key      // 简码精确（用户打了某常用语 key）

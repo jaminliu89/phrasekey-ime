@@ -16,13 +16,13 @@ final class PhraseKeyController: IMKInputController {
     private var selected = 0
     private let panel = CandidatePanel()
 
-    // MARK: - 初始化
+    // MARK: - Init
 
     override init!(server: IMKServer!, delegate: Any!, client: Any!) {
         super.init(server: server, delegate: delegate, client: client)
     }
 
-    // MARK: - 按键处理
+    // MARK: - Key Handler
 
     override func handle(_ event: NSEvent!, client: Any!) -> Bool {
         guard event.type == .keyDown else { return false }
@@ -76,7 +76,7 @@ final class PhraseKeyController: IMKInputController {
         }
     }
 
-    // MARK: - 候选与提交
+    // MARK: - Candidates & Commit
 
     private func refresh() {
         candidates = Searcher.shared.search(composing, scheme: AppSettings.current.scheme)
@@ -114,7 +114,7 @@ final class PhraseKeyController: IMKInputController {
         panel.hide()
     }
 
-    // MARK: - 光标定位
+    // MARK: - Cursor
 
     /// 取输入光标锚点：直接用鼠标位置（最可靠，接近光标）；极端情况退回屏幕底部中央。
     private func insertionPoint() -> NSPoint {
@@ -128,18 +128,18 @@ final class PhraseKeyController: IMKInputController {
         return mouse
     }
 
-    // MARK: - 工具
+    // MARK: - Utilities
 
     private func isPinyinInput(_ s: String) -> Bool {
         guard let scalar = s.unicodeScalars.first else { return false }
         return CharacterSet.lowercaseLetters.contains(scalar)
     }
 
-    // MARK: - 输入法菜单（右键候选/菜单栏显示）
+    // MARK: - Menu (right-click / menu bar)
 
     override func menu() -> NSMenu! {
         let m = NSMenu(title: "PhraseKey")
-        let about = NSMenuItem(title: "PhraseKey 设置…", action: #selector(openSettings), keyEquivalent: "")
+        let about = NSMenuItem(title: "PhraseKey Settings…", action: #selector(openSettings), keyEquivalent: "")
         about.target = self
         m.addItem(about)
         let importItem = NSMenuItem(title: "导入常用语…", action: #selector(importHotwords), keyEquivalent: "")

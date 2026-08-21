@@ -63,6 +63,8 @@ targets:
         buildPhase: resources
       - path: ../Sources/PhraseKeyIME/Resources/hanzi_pinyin.tsv
         buildPhase: resources
+      - path: ../BrandAssets/PhraseKey.svg
+        buildPhase: resources
     dependencies:
       - target: PhraseKeyKeyboard
         embed: true

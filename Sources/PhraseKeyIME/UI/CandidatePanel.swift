@@ -1,15 +1,15 @@
 import Cocoa
 
-/// Google Gboard 外观主题色。
+/// Google Gboard theme colors.
 enum GBoardTheme {
-    // 浅色
+    // Light mode
     static let bgLight        = NSColor(calibratedRed: 1.00, green: 1.00, blue: 1.00, alpha: 1.00)   // #FFFFFF
     static let highlightBgLight = NSColor(calibratedRed: 0.91, green: 0.94, blue: 0.99, alpha: 1.00) // #E8F0FE
     static let accentLight    = NSColor(calibratedRed: 0.26, green: 0.52, blue: 0.96, alpha: 1.00)   // #4285F4
     static let textLight      = NSColor(calibratedWhite: 0.10, alpha: 1.00)
     static let subLight       = NSColor(calibratedWhite: 0.45, alpha: 1.00)
 
-    // 深色
+    // Dark mode
     static let bgDark         = NSColor(calibratedRed: 0.17, green: 0.17, blue: 0.18, alpha: 1.00)   // #2C2C2E
     static let highlightBgDark = NSColor(calibratedRed: 0.24, green: 0.25, blue: 0.27, alpha: 1.00)  // #3C4043
     static let accentDark     = NSColor(calibratedRed: 0.54, green: 0.71, blue: 0.97, alpha: 1.00)   // #8AB4F8
@@ -26,7 +26,7 @@ enum GBoardTheme {
     static var sub: NSColor { isDark ? subDark : subLight }
 }
 
-/// 候选条内容视图：自绘 Google 风格（圆角卡片 + 高亮块 + 序号 + 类型角标）。
+/// Candidate bar content view: self-drawn Google Gboard style (rounded cards + highlight + index + type badge).
 final class CandidateBarView: NSView {
     var candidates: [(text: String, type: String)] = []
     var selectedIndex = 0
@@ -40,7 +40,6 @@ final class CandidateBarView: NSView {
         self.candidates = Array(candidates.prefix(Self.maxVisible))
         self.selectedIndex = min(selected, max(0, self.candidates.count - 1))
         needsDisplay = true
-        let count = CGFloat(self.candidates.count)
         frame = NSRect(x: 0, y: 0, width: Self.width(for: self.candidates), height: Self.cellHeight)
     }
 
@@ -56,18 +55,17 @@ final class CandidateBarView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         guard !candidates.isEmpty else { return }
-        let w = bounds.width
-        // 背景圆角卡片
+        // Rounded card background
         let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1),
                               xRadius: Self.cornerRadius, yRadius: Self.cornerRadius)
         GBoardTheme.bg.setFill()
         bg.fill()
-        // 细边框
+        // Thin border
         NSColor.black.withAlphaComponent(0.08).setStroke()
         bg.lineWidth = 1
         bg.stroke()
 
-        // 逐候选绘制
+        // Draw each candidate
         var x: CGFloat = 8
         let y: CGFloat = 0
         let h = Self.cellHeight
@@ -85,19 +83,19 @@ final class CandidateBarView: NSView {
                 hl.fill()
             }
 
-            // 序号（选中时显示 Google 蓝）
+            // Index (Google blue when selected)
             let numColor = i == selectedIndex ? GBoardTheme.accent : GBoardTheme.sub
             let numStr = NSAttributedString(string: "\(i + 1)",
                                             attributes: [.font: subFont, .foregroundColor: numColor])
             numStr.draw(at: NSPoint(x: x + 5, y: y + (h - 10) / 2))
 
-            // 文本（选中用 accent 色，符合 Gboard 选中高亮）
+            // Text (accent color when selected, Gboard style)
             let color = i == selectedIndex ? GBoardTheme.accent : GBoardTheme.text
             let str = NSAttributedString(string: c.text,
                                          attributes: [.font: font, .foregroundColor: color])
             str.draw(at: NSPoint(x: x + 16, y: y + (h - 20) / 2))
 
-            // 类型角标：hotword 显示 ⌘ 标记（常用语）
+            // Type badge: ⌘ for hotword (phrase items)
             if c.type == "hotword" {
                 let badge = "⌘"
                 let badgeStr = NSAttributedString(string: badge,
@@ -110,7 +108,7 @@ final class CandidateBarView: NSView {
     }
 }
 
-/// 候选窗：无边框浮动 NSPanel，跟随输入光标。
+/// Candidate window: borderless floating NSPanel, follows input cursor.
 final class CandidatePanel: NSPanel {
     private let barView = CandidateBarView()
 
@@ -128,13 +126,13 @@ final class CandidatePanel: NSPanel {
         contentView = barView
     }
 
-    /// 更新并显示候选。
+    /// Update and show candidates.
     func update(candidates: [(String, String)], selected: Int, at screenPoint: NSPoint) {
         guard !candidates.isEmpty else { hide(); return }
         barView.configure(candidates: candidates, selected: selected)
         let w = barView.frame.width
         let h = CandidateBarView.cellHeight
-        // 定位：默认放在光标右下（下方），超屏幕则上移
+        // Position: default below cursor, move up if off-screen
         var origin = NSPoint(x: screenPoint.x, y: screenPoint.y - h - 6)
         if let screen = NSScreen.main {
             if origin.x + w > screen.visibleFrame.maxX { origin.x = screen.visibleFrame.maxX - w - 8 }

@@ -11,9 +11,9 @@ import Foundation
 ///   - 零声母（a/o/e 开头）：首字母 + 韵母键，如 安=aj、爱=ad、恩=ef
 enum FlypyCodec {
 
-    // MARK: 键位表
+    // MARK: - Key Table
 
-    /// 声母键 → 声母
+    /// Initial key → initial
     static let initialMap: [Character: String] = [
         "v": "zh", "i": "ch", "u": "sh",
         "b": "b", "p": "p", "m": "m", "f": "f", "d": "d", "t": "t", "n": "n",
@@ -21,7 +21,7 @@ enum FlypyCodec {
         "z": "z", "c": "c", "s": "s", "r": "r", "y": "y", "w": "w"
     ]
 
-    /// 韵母键 → 韵母（取主读音；ü/üe 等特殊处理见 decode）
+    /// Final key → final (primary reading; special handling for ü/üe see decode)
     static let finalMap: [Character: String] = [
         "a": "a", "b": "in", "c": "ao", "d": "ai", "e": "e", "f": "en",
         "g": "eng", "h": "ang", "i": "i", "j": "an", "k": "ing", "l": "iang",
@@ -30,7 +30,7 @@ enum FlypyCodec {
         "y": "un", "z": "ou"
     ]
 
-    /// 零声母音节双拼编码表（首字母 + 韵母键）
+    /// Zero-initial syllable shuangpin code table (first letter + final key)
     static let zeroSyllables: [String: String] = [
         "aa": "a", "ad": "ai", "aj": "an", "ah": "ang", "ac": "ao",
         "ee": "e", "ew": "ei", "ef": "en", "eg": "eng", "er": "er",
@@ -68,7 +68,7 @@ enum FlypyCodec {
         }
     }
 
-    // MARK: 解码（双拼 → 拼音）
+    // MARK: - Decode (Shuangpin → Pinyin)
 
     /// 解码单个双拼音节（恰好 2 键），失败返回 nil。
     static func decodeSyllable(_ two: String) -> String? {
@@ -111,7 +111,7 @@ enum FlypyCodec {
         return out
     }
 
-    // MARK: 编码（拼音 → 双拼）
+    // MARK: - Encode (Pinyin → Shuangpin)
 
     /// 全拼音节 → 双拼两键。零声母按小鹤规则。失败返回 nil。
     static func encode(_ syllable: String) -> String? {

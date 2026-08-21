@@ -1,11 +1,11 @@
 import Foundation
 
-/// 拼音音节工具：内置标准拼音音节表（无声调），用于输入串的贪心分词。
-/// 跨端设计：汉字→拼音改用内置数据表 hanzi_pinyin.tsv（11072 字），
-/// 不依赖 CoreFoundation 的 CFStringTransform，引擎可在 iOS/Win/Linux 复用。
+/// Pinyin syllable utility: built-in standard pinyin syllable table (no tones) for greedy segmentation.
+/// Cross-platform: uses built-in hanzi_pinyin.tsv (11072 chars) instead of CoreFoundation CFStringTransform,
+/// so the engine can be reused on iOS/Windows/Linux.
 enum PinyinSyllable {
-    /// 标准音节集合（无声调），覆盖全拼输入场景。
-    /// 来源：通用拼音音节表（约 400 个），这里列出全部有效音节。
+    /// Standard syllable set (toneless), covering full pinyin input.
+    /// Source: universal pinyin syllable table (~400 entries), listing all valid syllables.
     static let all: Set<String> = {
         let initials = [
             "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h",
@@ -36,13 +36,13 @@ enum PinyinSyllable {
         return set
     }()
 
-    /// 判断一个字符串是否是有效拼音音节（全拼，无声调）。
+    /// Check if a string is a valid pinyin syllable (full pinyin, no tones).
     static func isSyllable(_ s: String) -> Bool {
         all.contains(s.lowercased())
     }
 
-    /// 贪心最长匹配分词：把连续拼音串切成音节数组。
-    /// 例："nihao" -> ["ni", "hao"]；"wode" -> ["wo", "de"]
+    /// Greedy longest-match segmentation: splits a continuous pinyin string into syllable array.
+    /// Examples: "nihao" → ["ni", "hao"]; "wode" → ["wo", "de"]
     static func segment(_ input: String) -> [String] {
         let chars = Array(input.lowercased())
         var result: [String] = []
@@ -70,10 +70,10 @@ enum PinyinSyllable {
         return result
     }
 
-    // MARK: - 汉字→拼音（跨平台数据表）
+    // MARK: - Hanzi → Pinyin (cross-platform table)
 
-    /// 汉字 → 拼音（无声调，取常用读音）。从 Resources/hanzi_pinyin.tsv 懒加载。
-    /// 形如：你→ni、好→hao；多音字取第一个（常用）读音。
+    /// Hanzi → pinyin (toneless, common reading). Lazily loaded from Resources/hanzi_pinyin.tsv.
+    /// Examples: 你→ni, 好→hao; polyphonic chars use the first (common) reading.
     static let hanziPinyin: [Character: String] = {
         var table: [Character: String] = [:]
         let urls: [URL?] = [
@@ -95,17 +95,17 @@ enum PinyinSyllable {
         return table
     }()
 
-    /// 单个汉字 → 拼音（无调）。未收录返回 nil。
+    /// Single hanzi → pinyin (no tone). Returns nil if not found.
     static func pinyin(of ch: Character) -> String? {
         hanziPinyin[ch]
     }
 
-    /// 汉字串 → 拼音首字母串（如「婚礼」→ hl）。未收录字符跳过。
+    /// Hanzi string → pinyin initials (e.g. "婚礼" → "hl"). Skips unmatched chars.
     static func initials(_ text: String) -> String {
         text.compactMap { hanziPinyin[$0]?.first.map { String($0).lowercased() } }.joined()
     }
 
-    /// 汉字串 → 全拼（无声调，空格分隔）。如「你好」→ "ni hao"。未收录字符跳过。
+    /// Hanzi string → full pinyin (toneless, space-separated). Examples: "你好" → "ni hao". Skips unmatched chars.
     static func pinyin(_ text: String) -> String {
         text.compactMap { hanziPinyin[$0] }.joined(separator: " ")
     }

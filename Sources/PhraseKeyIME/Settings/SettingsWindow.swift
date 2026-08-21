@@ -1,7 +1,7 @@
 import Cocoa
 
-/// PhraseKey 设置面板：常用语管理（Google Material 风格）。
-/// 功能：列表、添加、删除、编辑简码、导入常用语导出文件。
+/// PhraseKey Settings Panel: Phrase Manager (Google Material style).
+/// Features: list, add, delete, edit key, import phrases from other IMEs.
 final class SettingsWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate {
 
     private let store = HotwordsStore.shared
@@ -15,7 +15,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
             contentRect: NSRect(x: 0, y: 0, width: 720, height: 480),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered, defer: false)
-        window.title = "PhraseKey · 常用语管理"
+        window.title = "PhraseKey · Phrase Manager"
         window.center()
         self.init(window: window)
         buildUI()
@@ -26,7 +26,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         guard let content = window?.contentView else { return }
 
         // 输入方案选择
-        let schemeLabel = NSTextField(labelWithString: "输入方案：")
+        let schemeLabel = NSTextField(labelWithString: "Input Scheme:")
         schemeLabel.frame = NSRect(x: 16, y: 468, width: 80, height: 22)
         content.addSubview(schemeLabel)
 
@@ -38,38 +38,38 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         schemePop.tag = 100
         content.addSubview(schemePop)
 
-        let schemeTip = NSTextField(labelWithString: "小鹤音形 = 双拼 + 形码（装 xingma.tsv 后生效）")
+        let schemeTip = NSTextField(labelWithString: "Xingma = Shuangpin + shape codes (requires xingma.tsv)")
         schemeTip.font = .systemFont(ofSize: 11)
         schemeTip.textColor = .secondaryLabelColor
         schemeTip.frame = NSRect(x: 292, y: 468, width: 380, height: 20)
         content.addSubview(schemeTip)
 
         // 顶部说明
-        let tip = NSTextField(labelWithString: "常用语 = 输入简码/拼音一键上屏的长文本。字段与主流输入法常用语格式兼容。")
+        let tip = NSTextField(labelWithString: "Phrases = type a key (shortcut) to insert long text instantly. Compatible with mainstream IME formats.")
         tip.font = .systemFont(ofSize: 12)
         tip.textColor = .secondaryLabelColor
         tip.frame = NSRect(x: 16, y: 436, width: 688, height: 20)
         content.addSubview(tip)
 
         // 工具栏：添加 / 导入
-        let addBtn = NSButton(title: "＋ 添加", target: self, action: #selector(addPressed))
+        let addBtn = NSButton(title: "+ Add", target: self, action: #selector(addPressed))
         addBtn.frame = NSRect(x: 16, y: 396, width: 90, height: 28)
         content.addSubview(addBtn)
 
-        let importBtn = NSButton(title: "导入常用语…", target: self, action: #selector(importPressed))
+        let importBtn = NSButton(title: "Import Phrases…", target: self, action: #selector(importPressed))
         importBtn.frame = NSRect(x: 116, y: 396, width: 110, height: 28)
         content.addSubview(importBtn)
 
-        let delBtn = NSButton(title: "删除所选", target: self, action: #selector(deletePressed))
+        let delBtn = NSButton(title: "Delete", target: self, action: #selector(deletePressed))
         delBtn.frame = NSRect(x: 236, y: 396, width: 90, height: 28)
         content.addSubview(delBtn)
 
         // 表格
         let colKey = NSTableColumn(identifier: .init("key"))
-        colKey.title = "简码"
+        colKey.title = "Key"
         colKey.width = 90
         let colText = NSTableColumn(identifier: .init("text"))
-        colText.title = "内容"
+        colText.title = "Phrase"
         colText.width = 500
         tableView.addTableColumn(colKey)
         tableView.addTableColumn(colText)
@@ -85,21 +85,21 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         content.addSubview(scrollView)
 
         // 底部编辑区：简码 + 内容
-        let keyLabel = NSTextField(labelWithString: "简码：")
+        let keyLabel = NSTextField(labelWithString: "Key:")
         keyLabel.frame = NSRect(x: 16, y: 44, width: 46, height: 20)
         content.addSubview(keyLabel)
-        keyField.placeholderString = "如 hljx (3-6位)"
+        keyField.placeholderString = "your shortcut (3-6 chars)"
         keyField.frame = NSRect(x: 64, y: 42, width: 110, height: 24)
         content.addSubview(keyField)
 
-        let textLabel = NSTextField(labelWithString: "内容：")
+        let textLabel = NSTextField(labelWithString: "Text:")
         textLabel.frame = NSRect(x: 184, y: 44, width: 46, height: 20)
         content.addSubview(textLabel)
-        textField.placeholderString = "输入常用语文本（可多行）"
+        textField.placeholderString = "your phrase text (multiline)"
         textField.frame = NSRect(x: 232, y: 42, width: 360, height: 24)
         content.addSubview(textField)
 
-        let saveBtn = NSButton(title: "保存当前", target: self, action: #selector(saveCurrent))
+        let saveBtn = NSButton(title: "Save", target: self, action: #selector(saveCurrent))
         saveBtn.frame = NSRect(x: 600, y: 40, width: 104, height: 28)
         content.addSubview(saveBtn)
     }
@@ -145,15 +145,15 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
 
     @objc private func importPressed() {
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = ["json", "csv"]
+        panel.allowedContentTypes = [.json, .commaSeparatedText]
         panel.message = "选择从其他输入法导出的常用语文件（CSV/JSON）"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let n = url.pathExtension.lowercased() == "json"
             ? store.importFromJSON(url: url)
             : store.importFromCSV(url: url)
         let alert = NSAlert()
-        alert.messageText = "导入完成"
-        alert.informativeText = "已导入 \(n) 条常用语。"
+        alert.messageText = "Import Complete"
+        alert.informativeText = "Imported \(n) phrases."
         alert.runModal()
         reloadData()
     }
@@ -181,7 +181,7 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         textField.stringValue = store.items[row].text
     }
 
-    // MARK: - 静态入口
+    // MARK: - Static Entry
 
     static func show() {
         let c = SettingsWindowController()

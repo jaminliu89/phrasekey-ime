@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key>
-    <string>zh_CN</string>
+    <string>en_US</string>
     <key>CFBundleExecutable</key>
     <string>PhraseKeyIME</string>
     <key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHumanReadableCopyright</key>
-    <string>MIT License. 开源输入法，常用语优先。</string>
+    <string>MIT License. Open-source, your phrases everywhere.</string>
 
     <!-- IMK 输入法必需键 -->
     <key>InputMethodConnectionName</key>
@@ -42,8 +42,10 @@
     <string>PhraseKey</string>
     <key>TISInputSourceType</key>
     <string>TISTypeKeyboardInputMode</string>
+    <key>CFBundleIconFile</key>
+    <string>PhraseKey</string>
     <key>tsInputMethodIconFileKey</key>
-    <string>icon</string>
+    <string>PhraseKey</string>
 
     <!-- 启动即允许以 accessory 方式存在 -->
     <key>LSUIElement</key>

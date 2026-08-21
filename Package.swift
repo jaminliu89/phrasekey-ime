@@ -12,7 +12,7 @@ let package = Package(
             name: "PhraseKeyIME",
             path: "Sources/PhraseKeyIME",
             resources: [
-                .copy("Resources/dict.tsv")
+                .process("Resources")
             ],
             linkerSettings: [
                 .linkedFramework("InputMethodKit"),
