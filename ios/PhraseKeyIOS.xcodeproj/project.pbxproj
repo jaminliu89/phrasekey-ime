@@ -74,12 +74,14 @@
 		3E39A9C1DD839DE3BF9ED37F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeySettings.swift; sourceTree = "<group>"; };
 		5DF109F23059DA35897457F9 /* PinyinSyllable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinSyllable.swift; sourceTree = "<group>"; };
+		6D78BCEBEE2DDF976B240FFF /* PhraseKeyHost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseKeyHost.entitlements; sourceTree = "<group>"; };
 		772221C86C7A70EA833093CA /* MobileEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileEngine.swift; sourceTree = "<group>"; };
 		94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		983453366666F51FAE68E511 /* CodeTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeTable.swift; sourceTree = "<group>"; };
 		A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeyHostApp.swift; sourceTree = "<group>"; };
 		A40A2B785186144F767B6BC2 /* HotwordsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotwordsStore.swift; sourceTree = "<group>"; };
 		AD21946F78C1F685C912DB8D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B9754D9C352068BE1EC8F8D9 /* PhraseKeyKeyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseKeyKeyboard.entitlements; sourceTree = "<group>"; };
 		C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlypyCodec.swift; sourceTree = "<group>"; };
 		CA70CC7277051F72C24D1BA9 /* Searcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Searcher.swift; sourceTree = "<group>"; };
 		CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */ = {isa = PBXFileReference; path = hanzi_pinyin.tsv; sourceTree = "<group>"; };
@@ -145,6 +147,7 @@
 				3E39A9C1DD839DE3BF9ED37F /* Info.plist */,
 				94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */,
 				772221C86C7A70EA833093CA /* MobileEngine.swift */,
+				B9754D9C352068BE1EC8F8D9 /* PhraseKeyKeyboard.entitlements */,
 			);
 			path = PhraseKeyKeyboard;
 			sourceTree = "<group>";
@@ -163,6 +166,7 @@
 			isa = PBXGroup;
 			children = (
 				AD21946F78C1F685C912DB8D /* Info.plist */,
+				6D78BCEBEE2DDF976B240FFF /* PhraseKeyHost.entitlements */,
 				A1F5C10D56F9690452592E48 /* PhraseKeyHostApp.swift */,
 			);
 			path = PhraseKeyHost;
@@ -501,6 +505,7 @@
 		684F4A39735FD58A3290F43D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = PhraseKeyKeyboard/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -578,6 +583,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyHost/PhraseKeyHost.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = PhraseKeyHost/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -595,6 +601,7 @@
 		918982601B4339E7577A0229 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = PhraseKeyKeyboard/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -614,6 +621,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PhraseKeyHost/PhraseKeyHost.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = PhraseKeyHost/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;

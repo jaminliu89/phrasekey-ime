@@ -1,18 +1,12 @@
 import UIKit
 
-/// iOS 键盘扩展入口。
+/// iOS 键盘扩展主控制器。
 ///
-/// 关键修复（基于多轮真机实验的结论）：
-/// - 最小版（1 按钮 + Auto Layout 约束）稳定弹出；所有"零 Auto Layout 约束"的纯 frame 版
-///   都间歇性不弹/闪烁。结论：**键盘扩展的 view 必须有 Auto Layout 约束**，系统才能正确
-///   计算键盘尺寸并加载；无约束时系统不知道 view 有内容 → 间歇性加载失败。
-/// - 本版：keyArea 用 4 条 Auto Layout 约束填满 view（给系统锚点，不设固定高度，高度交系统默认），
-///   keyArea **内部全部 frame 手工布局**（候选条 + 键区 + 按钮）——零内部约束冲突。
-/// - 候选条用普通 UIView（键盘容器自带下滑收起手势，嵌套 UIScrollView 会拦截导致顶部闪烁）。
-/// - 加载路径零文件访问（受限沙盒文件 I/O 会阻塞加载），完全访问开关已正确暴露（RequestsOpenAccess）。
+/// 注意：免费 Apple ID 签名的开发版本，锁屏后扩展会被系统收回（签名验证问题），
+/// 这是 iOS 免费开发者账号的固有特性，不是 bug。付费开发者账号无此问题。
 final class KeyboardViewController: UIInputViewController {
 
-    private var engine = MobileEngine(scheme: .pinyin)
+    private var engine: MobileEngine?
     private var candidateBar: UIView!
     private var candidateButtons: [UIButton] = []
     private var keyArea: UIView!
@@ -25,45 +19,47 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        engine = MobileEngine(scheme: .pinyin)  // 零文件访问，纯内存
-        // 终极方案：弹起瞬间立即构建完整内容并立即布局（无"空→满"突变、无按钮堆叠）。
-        // 1. 不用延迟构建：空容器再突然填满 = 内容突变，看起来就是"闪"
-        // 2. 不依赖 view.bounds 布局（viewDidLoad 时 bounds 为 0 → 按钮堆左上角 → 动画中修正 → 闪），
-        //    用 UIScreen 宽度 + 300pt 默认高度立即布局，弹起瞬间就是正确成品
-        // 3. viewDidLayoutSubviews 只做 frame 微调（不增删 subview，不打断系统动画）
-        buildUI()
-        rebuildKeys()
-        didBuildContent = true
-        layoutFrames()
+
+        let kbView = UIInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 260), inputViewStyle: .keyboard)
+        kbView.translatesAutoresizingMaskIntoConstraints = false
+        kbView.backgroundColor = UIColor(red: 0.784, green: 0.800, blue: 0.824, alpha: 1)
+        self.inputView = kbView
+
+        keyArea = UIView()
+        keyArea.translatesAutoresizingMaskIntoConstraints = false
+        kbView.addSubview(keyArea)
+        NSLayoutConstraint.activate([
+            keyArea.topAnchor.constraint(equalTo: kbView.topAnchor),
+            keyArea.bottomAnchor.constraint(equalTo: kbView.bottomAnchor),
+            keyArea.leadingAnchor.constraint(equalTo: kbView.leadingAnchor),
+            keyArea.trailingAnchor.constraint(equalTo: kbView.trailingAnchor),
+        ])
+
+        // 后台加载引擎，避免启动时卡主线程被 watchdog 杀
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let eng = MobileEngine(scheme: .pinyin)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.engine = eng
+                self.buildContent()
+            }
+        }
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // 只做 frame 布局（幂等改 frame，不增删 subview），按真实 bounds 微调。
         if didBuildContent {
             layoutFrames()
             if !candidateButtons.isEmpty { layoutCandidates() }
         }
     }
 
-    // MARK: - 构建 UI
+    // MARK: - 构建内容
 
-    private func buildUI() {
-        view.backgroundColor = UIColor(red: 0.784, green: 0.800, blue: 0.824, alpha: 1) // #C8CCD2
-
-        // 锚点容器：Auto Layout 填满 view（给系统尺寸锚点，无内部约束、不设固定高度）
-        keyArea = UIView()
-        keyArea.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(keyArea)
-        NSLayoutConstraint.activate([
-            keyArea.topAnchor.constraint(equalTo: view.topAnchor),
-            keyArea.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            keyArea.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            keyArea.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-        ])
-        // 注意：不再给系统 view 加固定高度约束（避免与系统 root view 的 autoresizing 冲突），
-        // 高度完全交给系统，内容延迟到首次布局稳定后按实际 bounds 适配。
-        // 内容（候选条 + 按键）在首次 viewDidLayoutSubviews（高度>100）时由 rebuildKeys() 构建。
+    private func buildContent() {
+        rebuildKeys()
+        didBuildContent = true
+        layoutFrames()
     }
 
     private func makeKey(_ title: String) -> UIButton {
@@ -81,7 +77,8 @@ final class KeyboardViewController: UIInputViewController {
         keyArea.subviews.forEach { $0.removeFromSuperview() }
         keyRows = []
         bottomKeys = []
-        // 候选条先重加（被清掉了）
+
+        // 候选条
         candidateBar = UIView()
         candidateBar.backgroundColor = .white
         keyArea.addSubview(candidateBar)
@@ -103,7 +100,13 @@ final class KeyboardViewController: UIInputViewController {
             }
             keyRows.append(btns)
         }
-        // 底行：方案 | 空格 | 回车
+
+        // 底行：🌐 切换 | 方案 | 空格 | 回车
+        let globeBtn = makeKey("🌐")
+        globeBtn.addTarget(self, action: #selector(advanceToNextInputMode), for: .touchUpInside)
+        keyArea.addSubview(globeBtn)
+        bottomKeys.append(globeBtn)
+
         let schemeBtn = makeKey(schemeShort())
         schemeBtn.addTarget(self, action: #selector(cycleScheme), for: .touchUpInside)
         keyArea.addSubview(schemeBtn)
@@ -120,28 +123,23 @@ final class KeyboardViewController: UIInputViewController {
         bottomKeys.append(returnBtn)
     }
 
-    // MARK: - frame 布局（唯一布局入口）
+    // MARK: - 布局
 
     private func layoutFrames() {
-        // viewDidLoad 时 bounds 为 0，用 UIScreen 宽度 + 300pt 默认高度兜底立即布局
-        // （弹起瞬间就是正确成品，避免按钮堆叠后动画中修正造成的闪烁）
-        let w = view.bounds.width > 0 ? view.bounds.width : UIScreen.main.bounds.width
-        let h = view.bounds.height > 0 ? view.bounds.height : 300
+        let w = keyArea.bounds.width > 0 ? keyArea.bounds.width : UIScreen.main.bounds.width
+        let h = keyArea.bounds.height > 0 ? keyArea.bounds.height : 260
         guard w > 0, h > 0 else { return }
-        let kw = keyArea.bounds.width > 0 ? keyArea.bounds.width : w
-        let kh = keyArea.bounds.height > 0 ? keyArea.bounds.height : h
-        guard kw > 0, kh > 0 else { return }
 
-        candidateBar.frame = CGRect(x: 0, y: 0, width: kw, height: 40)
+        candidateBar.frame = CGRect(x: 0, y: 0, width: w, height: 40)
         let keysTop: CGFloat = 46
-        let sp: CGFloat = 6
-        let bottomH: CGFloat = 44
-        let keysH = max(kh - keysTop - sp, 80)
+        let sp: CGFloat = 5
+        let bottomH: CGFloat = 42
+        let keysH = max(h - keysTop - sp, 80)
         let mainH = keyRows.isEmpty ? 0 : (keysH - bottomH - sp * 2) / CGFloat(keyRows.count)
         var y: CGFloat = keysTop
         for btns in keyRows {
             let n = btns.count
-            let btnW = n > 0 ? (kw - sp * CGFloat(n - 1)) / CGFloat(n) : 0
+            let btnW = n > 0 ? (w - sp * CGFloat(n - 1)) / CGFloat(n) : 0
             var x: CGFloat = 0
             for b in btns {
                 b.frame = CGRect(x: x, y: y, width: btnW, height: mainH)
@@ -150,10 +148,16 @@ final class KeyboardViewController: UIInputViewController {
             y += mainH + sp
         }
         // 底行
-        let bw = bottomKeys.isEmpty ? 0 : (kw - sp * 2) / CGFloat(bottomKeys.count)
-        for (i, b) in bottomKeys.enumerated() {
-            b.frame = CGRect(x: CGFloat(i) * (bw + sp), y: y, width: bw, height: bottomH)
-        }
+        let bottomY = y
+        let globeW: CGFloat = 40
+        let schemeW: CGFloat = 50
+        let returnW: CGFloat = 50
+        let spaceW = w - globeW - schemeW - returnW - sp * 3
+        var bx: CGFloat = 0
+        bottomKeys[0].frame = CGRect(x: bx, y: bottomY, width: globeW, height: bottomH); bx += globeW + sp
+        bottomKeys[1].frame = CGRect(x: bx, y: bottomY, width: schemeW, height: bottomH); bx += schemeW + sp
+        bottomKeys[2].frame = CGRect(x: bx, y: bottomY, width: spaceW, height: bottomH); bx += spaceW + sp
+        bottomKeys[3].frame = CGRect(x: bx, y: bottomY, width: returnW, height: bottomH)
     }
 
     // MARK: - 候选条
@@ -172,13 +176,15 @@ final class KeyboardViewController: UIInputViewController {
     private func renderCandidates() {
         candidateButtons.forEach { $0.removeFromSuperview() }
         candidateButtons = []
+        guard let engine else { return }
         var x: CGFloat = 6
         let h: CGFloat = 34
         let maxW = max(candidateBar.bounds.width - 12, 100)
         for c in engine.candidates.prefix(12) {
             let btn = UIButton(type: .system)
             let mark = c.type == "hotword" ? "⌘ " : ""
-            btn.setTitle(mark + (c.text.count > 14 ? String(c.text.prefix(14)) + "…" : c.text), for: .normal)
+            let txt = c.text.count > 14 ? String(c.text.prefix(14)) + "…" : c.text
+            btn.setTitle(mark + txt, for: .normal)
             btn.setTitleColor(c.type == "hotword" ? UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1) : .black, for: .normal)
             btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
             btn.sizeToFit()
@@ -193,6 +199,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func candidateTapped(_ sender: UIButton) {
+        guard let engine else { return }
         if let idx = candidateButtons.firstIndex(of: sender),
            let text = engine.commit(at: idx) {
             textDocumentProxy.insertText(text)
@@ -203,6 +210,7 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: - 按键
 
     @objc private func keyPressed(_ sender: UIButton) {
+        guard let engine else { return }
         guard let title = sender.title(for: .normal) else { return }
         switch title {
         case "⌫":
@@ -227,28 +235,31 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func spacePressed() {
+        guard let engine else { return }
         let t = engine.space()
         textDocumentProxy.insertText(t)
         renderCandidates()
     }
 
     @objc private func returnPressed() {
+        guard let engine else { return }
         let t = engine.commitRaw()
         textDocumentProxy.insertText(t.isEmpty ? "\n" : t)
         renderCandidates()
     }
 
     @objc private func cycleScheme() {
+        guard let engine else { return }
         let all = InputScheme.allCases
         let cur = all.firstIndex(of: engine.scheme) ?? 0
         let next = all[(cur + 1) % all.count]
-        engine = MobileEngine(scheme: next)
-        // 方案切换仅内存生效；不碰 AppSettings（受限沙盒文件访问问题，持久化后续处理）
+        self.engine = MobileEngine(scheme: next)
         renderCandidates()
         rebuildKeys()
     }
 
     private func schemeShort() -> String {
+        guard let engine else { return "..." }
         switch engine.scheme {
         case .pinyin: return "全拼"
         case .flypy: return "双拼"
