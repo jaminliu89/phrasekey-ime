@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// PhraseKey Host App: keyboard setup guide + phrase preview.
-/// Data shared with keyboard extension via App Group container (group.com.phrasekey.ime).
+/// Data local to the keyboard sandbox (free Apple ID: no App Group, no cross-process sharing).
 @main
 struct PhraseKeyHostApp: App {
     init() {

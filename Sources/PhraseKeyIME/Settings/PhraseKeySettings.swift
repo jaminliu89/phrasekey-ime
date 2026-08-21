@@ -18,8 +18,11 @@ struct PhraseKeySettings: Codable {
     static var overrideDefaultDir: URL?
     static var defaultDir: URL {
         if let d = overrideDefaultDir { return d }
-        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("PhraseKey", isDirectory: true)
+        // 键盘扩展受限沙盒里 FileManager 查询可能返回空数组，绝不能 force unwrap（否则启动即崩）
+        if let first = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            return first.appendingPathComponent("PhraseKey", isDirectory: true)
+        }
+        return URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("PhraseKey", isDirectory: true)
     }
 
     /// 解析后的数据目录（用户设置优先）

@@ -1,143 +1,50 @@
 import UIKit
 
-/// iOS 键盘扩展入口。Gboard 风格：候选条 + 字母/数字层 + 常用语优先。
-/// 复用桌面端引擎（MobileEngine → Searcher），数据走 App Group 容器（跨端同步）。
+/// iOS 键盘扩展入口。
+///
+/// 布局策略：**纯 frame 手工布局**（viewDidLayoutSubviews 里按 view.bounds 计算每个视图位置），
+/// 键盘内部不引入任何 Auto Layout 约束——彻底消灭「约束冲突 → 布局死循环 → 顶部闪烁 / 键盘不弹」。
+/// 键盘高度完全交给系统管理（不设任何高度约束）。
+///
+/// 加载路径零文件访问：绝不触碰 AppSettings.current（其静态初始化会 load() 读文件，
+/// 键盘扩展受限沙盒下文件访问会阻塞加载）。引擎用默认方案，词库延迟到首次输入时才可能加载。
 final class KeyboardViewController: UIInputViewController {
 
-    private var engine: MobileEngine!
-    private var candidateBar: UIScrollView!
+    private var engine = MobileEngine(scheme: .pinyin)
+    private var candidateBar: UIView!
     private var candidateButtons: [UIButton] = []
-    private var keys: [String] = []
-    private var isNumberPad = false
-    private var schemeLabel: UILabel!
     private var keyArea: UIView!
+    private var keyRows: [[UIButton]] = []
+    private var bottomKeys: [UIButton] = []
+    private var isNumberPad = false
 
     // MARK: - 生命周期
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // App Group 数据容器（与 macOS/宿主共享 hotwords.json 等）
-        // 未开启「允许完全访问」时容器不可用：优雅降级到本地沙盒目录，绝不能崩溃
-        if let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.phrasekey.ime") {
-            PhraseKeySettings.overrideDefaultDir = container.appendingPathComponent("PhraseKey")
-        }
-        AppSettings.current = PhraseKeySettings.load()
-        engine = MobileEngine(scheme: AppSettings.current.scheme)
+        engine = MobileEngine(scheme: .pinyin)  // 零文件访问，纯内存
         buildUI()
     }
 
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        // 键盘高度交给系统管理。
-        // 不要在布局回调里修改高度约束：每次改约束都会触发新的布局，
-        // 形成死循环导致键盘界面不断重绘闪烁。
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        layoutFrames()
+        if !candidateButtons.isEmpty { layoutCandidates() }
     }
 
-    // MARK: - 构建 UI
+    // MARK: - 构建 UI（仅创建子视图，位置全部交给 layoutFrames）
 
     private func buildUI() {
         view.backgroundColor = UIColor(red: 0.784, green: 0.800, blue: 0.824, alpha: 1) // #C8CCD2
-        // 高度约束
-        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 300)
-        heightConstraint.priority = .defaultHigh
-        view.addConstraint(heightConstraint)
 
-        // 候选条
-        candidateBar = UIScrollView()
+        candidateBar = UIView()
         candidateBar.backgroundColor = .white
-        candidateBar.showsHorizontalScrollIndicator = false
-        candidateBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(candidateBar)
 
-        // 键盘键区（字母/数字层 + 底行）
         keyArea = UIView()
-        keyArea.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyArea)
 
-        NSLayoutConstraint.activate([
-            candidateBar.topAnchor.constraint(equalTo: view.topAnchor),
-            candidateBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            candidateBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            candidateBar.heightAnchor.constraint(equalToConstant: 40),
-            keyArea.topAnchor.constraint(equalTo: candidateBar.bottomAnchor, constant: 6),
-            keyArea.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
-            keyArea.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
-            keyArea.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -6),
-        ])
-
-        buildKeyArea(in: keyArea)
-    }
-
-    private func buildKeyArea(in container: UIView) {
-        container.subviews.forEach { $0.removeFromSuperview() }
-        // 4 行：3 行主键 + 1 行底行
-        let rows: [[String]] = isNumberPad
-            ? [["1","2","3","4","5","6","7","8","9","0"],
-               ["-","/",":",";","(",")","$","&","@","\""],
-               [".#+=", ".", ",", "?", "!", "'", "⌫"]]
-            : [["q","w","e","r","t","y","u","i","o","p"],
-               ["a","s","d","f","g","h","j","k","l"],
-               ["123", "z","x","c","v","b","n","m", "⌫"]]
-
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.distribution = .fillEqually
-        stack.spacing = 6
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(stack)
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: container.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-        ])
-
-        for (i, row) in rows.enumerated() {
-            let rowStack = UIStackView()
-            rowStack.axis = .horizontal
-            rowStack.distribution = .fillEqually
-            rowStack.spacing = 6
-            for key in row {
-                let btn = makeKey(key)
-                rowStack.addArrangedSubview(btn)
-            }
-            // 第三行字母的 z/x/c/v/b/n/m 上移（标准键盘布局偏移）
-            if !isNumberPad && i == 2 {
-                let pad = UIView()
-                rowStack.insertArrangedSubview(pad, at: 0)
-            }
-            stack.addArrangedSubview(rowStack)
-        }
-
-        // 底行：方案 | 空格 | 回车
-        let bottom = UIStackView()
-        bottom.axis = .horizontal
-        bottom.distribution = .fill
-        bottom.spacing = 6
-        bottom.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(bottom)
-        NSLayoutConstraint.activate([
-            bottom.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 6),
-            bottom.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            bottom.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            bottom.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            bottom.heightAnchor.constraint(equalToConstant: 46),
-        ])
-
-        // 方案切换按钮（显示当前方案）
-        let schemeBtn = makeKey("\(schemeShort())")
-        schemeBtn.addTarget(self, action: #selector(cycleScheme), for: .touchUpInside)
-        schemeBtn.widthAnchor.constraint(equalToConstant: 90).isActive = true
-        bottom.addArrangedSubview(schemeBtn)
-
-        let spaceBtn = makeKey("空格")
-        spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
-        spaceBtn.widthAnchor.constraint(equalToConstant: 200).isActive = true
-        bottom.addArrangedSubview(spaceBtn)
-
-        let returnBtn = makeKey("⏎")
-        returnBtn.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
-        returnBtn.widthAnchor.constraint(equalToConstant: 90).isActive = true
-        bottom.addArrangedSubview(returnBtn)
+        rebuildKeys()
     }
 
     private func makeKey(_ title: String) -> UIButton {
@@ -147,30 +54,95 @@ final class KeyboardViewController: UIInputViewController {
         btn.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
         btn.backgroundColor = .white
         btn.layer.cornerRadius = 6
-        btn.layer.shadowColor = UIColor.black.cgColor
-        btn.layer.shadowOpacity = 0.2
-        btn.layer.shadowOffset = CGSize(width: 0, height: 1)
-        btn.layer.shadowRadius = 0
-        btn.heightAnchor.constraint(equalToConstant: 46).isActive = true
         btn.addTarget(self, action: #selector(keyPressed(_:)), for: .touchUpInside)
         return btn
     }
 
-    private func schemeShort() -> String {
-        switch engine.scheme {
-        case .pinyin: return "全拼"
-        case .flypy: return "双拼"
-        case .flypyXing: return "音形"
+    private func rebuildKeys() {
+        keyArea.subviews.forEach { $0.removeFromSuperview() }
+        keyRows = []
+        bottomKeys = []
+        let rows: [[String]] = isNumberPad
+            ? [["1","2","3","4","5","6","7","8","9","0"],
+               ["-","/",":",";","(",")","$","&","@","\""],
+               [".#+=", ".", ",", "?", "!", "'", "⌫"]]
+            : [["q","w","e","r","t","y","u","i","o","p"],
+               ["a","s","d","f","g","h","j","k","l"],
+               ["123", "z","x","c","v","b","n","m", "⌫"]]
+        for row in rows {
+            var btns: [UIButton] = []
+            for key in row {
+                let b = makeKey(key)
+                keyArea.addSubview(b)
+                btns.append(b)
+            }
+            keyRows.append(btns)
+        }
+        // 底行：方案 | 空格 | 回车
+        let schemeBtn = makeKey(schemeShort())
+        schemeBtn.addTarget(self, action: #selector(cycleScheme), for: .touchUpInside)
+        keyArea.addSubview(schemeBtn)
+        bottomKeys.append(schemeBtn)
+
+        let spaceBtn = makeKey("空格")
+        spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
+        keyArea.addSubview(spaceBtn)
+        bottomKeys.append(spaceBtn)
+
+        let returnBtn = makeKey("⏎")
+        returnBtn.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
+        keyArea.addSubview(returnBtn)
+        bottomKeys.append(returnBtn)
+    }
+
+    // MARK: - frame 布局（唯一布局入口）
+
+    private func layoutFrames() {
+        let w = view.bounds.width
+        let h = view.bounds.height
+        guard w > 0, h > 0 else { return }
+
+        candidateBar.frame = CGRect(x: 0, y: 0, width: w, height: 40)
+        keyArea.frame = CGRect(x: 4, y: 46, width: w - 8, height: max(h - 52, 120))
+        let kr = keyArea.bounds
+        let sp: CGFloat = 6
+        let bottomH: CGFloat = 44
+        let mainH = keyRows.isEmpty ? 0 : (kr.height - bottomH - sp * 2) / CGFloat(keyRows.count)
+        var y: CGFloat = 0
+        for btns in keyRows {
+            let n = btns.count
+            let btnW = n > 0 ? (kr.width - sp * CGFloat(n - 1)) / CGFloat(n) : 0
+            var x: CGFloat = 0
+            for b in btns {
+                b.frame = CGRect(x: x, y: y, width: btnW, height: mainH)
+                x += btnW + sp
+            }
+            y += mainH + sp
+        }
+        // 底行
+        let bw = bottomKeys.isEmpty ? 0 : (kr.width - sp * 2) / CGFloat(bottomKeys.count)
+        for (i, b) in bottomKeys.enumerated() {
+            b.frame = CGRect(x: CGFloat(i) * (bw + sp), y: y, width: bw, height: bottomH)
         }
     }
 
     // MARK: - 候选条
 
+    private func layoutCandidates() {
+        // 候选按钮 frame 由 renderCandidates 计算，这里仅在 bounds 变化时由布局回调触发重排
+        var x: CGFloat = 6
+        for b in candidateButtons {
+            b.frame.origin.x = x
+            x += b.frame.width + 8
+        }
+    }
+
     private func renderCandidates() {
         candidateButtons.forEach { $0.removeFromSuperview() }
         candidateButtons = []
         var x: CGFloat = 6
-        let height: CGFloat = 34
+        let h: CGFloat = 34
+        let maxW = max(candidateBar.bounds.width - 12, 100)
         for c in engine.candidates.prefix(12) {
             let btn = UIButton(type: .system)
             let mark = c.type == "hotword" ? "⌘ " : ""
@@ -178,14 +150,14 @@ final class KeyboardViewController: UIInputViewController {
             btn.setTitleColor(c.type == "hotword" ? UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1) : .black, for: .normal)
             btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
             btn.sizeToFit()
-            let w = btn.frame.width + 24
-            btn.frame = CGRect(x: x, y: 3, width: min(w, candidateBar.bounds.width - 24), height: height)
+            let w = min(btn.frame.width + 24, maxW)
+            if x + w > maxW + 8 { break }
+            btn.frame = CGRect(x: x, y: 3, width: w, height: h)
             btn.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)
             candidateBar.addSubview(btn)
             candidateButtons.append(btn)
-            x += btn.frame.width + 8
+            x += w + 8
         }
-        candidateBar.contentSize = CGSize(width: x + 6, height: height)
     }
 
     @objc private func candidateTapped(_ sender: UIButton) {
@@ -209,7 +181,8 @@ final class KeyboardViewController: UIInputViewController {
             }
         case "123", "ABC":
             isNumberPad.toggle()
-            buildKeyArea(in: keyArea)
+            rebuildKeys()
+            layoutFrames()
             renderCandidates()
             return
         case ".#+=":
@@ -239,14 +212,17 @@ final class KeyboardViewController: UIInputViewController {
         let cur = all.firstIndex(of: engine.scheme) ?? 0
         let next = all[(cur + 1) % all.count]
         engine = MobileEngine(scheme: next)
-        AppSettings.current.scheme = next
-        AppSettings.save()
+        // 方案切换仅内存生效；不碰 AppSettings（受限沙盒文件访问问题，持久化后续处理）
         renderCandidates()
-        rebuildBottom()
+        rebuildKeys()
+        layoutFrames()
     }
 
-    private func rebuildBottom() {
-        // 刷新底行方案按钮标题（简单方案：整体重建键盘区）
-        buildKeyArea(in: keyArea)
+    private func schemeShort() -> String {
+        switch engine.scheme {
+        case .pinyin: return "全拼"
+        case .flypy: return "双拼"
+        case .flypyXing: return "音形"
+        }
     }
 }

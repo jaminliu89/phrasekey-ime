@@ -44,11 +44,6 @@ targets:
             RequestOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
-    entitlements:
-      path: PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.phrasekey.ime
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime.keyboard
@@ -85,11 +80,6 @@ targets:
         CFBundleShortVersionString: "0.2.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
-    entitlements:
-      path: PhraseKeyHost/PhraseKeyHost.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.phrasekey.ime
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime
