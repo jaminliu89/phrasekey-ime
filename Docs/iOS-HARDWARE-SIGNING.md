@@ -36,16 +36,18 @@
 Xcode 菜单：**Xcode → Settings → Accounts**，确认列表里有你的 Apple ID。
 没有就点左下角 **＋ → Apple ID** 登录（用你的 Apple ID 即可，无需付费）。
 
-### 第 2 步：给宿主 App 选签名团队
+### 第 2 步：确认签名团队
+
+> **本项目已将 Team ID 写死在 `ios/project.yml`（`DEVELOPMENT_TEAM: 63PZWHLKMU`），
+> 跑 `xcodegen generate` 后无需再手动选 Team，直接 ⌘R 即可。**
+> 换人签名时，改 project.yml 里的 Team ID 再重新生成。
 
 1. Xcode 左侧选中 **PhraseKeyHost** target（项目导航器里点项目名，再点 PhraseKeyHost）
 2. 切到 **Signing & Capabilities** 标签页
-3. 勾选 **Automatically manage signing**
-4. **Team** 下拉框选你的 Apple ID（显示为 "Personal Team" 或你的名字）
-5. 等几秒，Xcode 自动生成 Provisioning Profile
+3. 确认 **Team** 下拉框显示的是你的 Apple ID（如 "Kurt Gibson (Personal Team)"）
+4. 若不是，勾 **Automatically manage signing** 并重新选 Team
 
-> ⚠️ 如果每次跑 `xcodegen generate` 重新生成项目，Team 选择会被重置，
-> 重新生成后需回到本步再选一次 Team。
+> ⚠️ 如果跑 `xcodegen generate` 重新生成项目，Team 来自 project.yml（已内置），无需重选。
 
 ### 第 3 步：给键盘扩展选签名团队
 
@@ -111,7 +113,7 @@ iPhone：**设置 → 通用 → 键盘 → 键盘 → 添加新键盘** → 选
 
 | 报错 | 原因 | 解决 |
 |------|------|------|
-| `No profiles for 'com.phrasekey.ime' were found` | Team 没选 / 没自动签名 | 重做第 2、3 步 |
+| `No profiles for 'com.phrasekey.ime' were found` | Team 没选 / project.yml 没配 | 确认 project.yml 的 DEVELOPMENT_TEAM 后重新 `xcodegen generate` |
 | `App has not been granted permission to use this App Group` | 键盘没开完全访问 | 做第 7 步 |
 | `Unable to launch ... cannot verify developer` | 签名过期 | 重连 iPhone，Xcode ⌘R 续签，再信任一次 |
 | `Bundle ID already used` | Bundle ID 被占用 | 做第 4 步改唯一后缀 |

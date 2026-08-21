@@ -10,6 +10,9 @@ settings:
     SWIFT_VERSION: "5.9"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     CODE_SIGN_STYLE: Automatic
+    # 免费 Apple ID Personal Team（Kurt Gibson / kimliu2@yahoo.com）
+    # 换人签名时改成自己的 Team ID：Xcode → Settings → Accounts 查看
+    DEVELOPMENT_TEAM: "63PZWHLKMU"
 
 targets:
   # 键盘扩展：复用桌面端引擎（纯 Foundation，无 AppKit）
