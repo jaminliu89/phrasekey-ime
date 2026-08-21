@@ -61,10 +61,21 @@ Then: **Log out / restart** → System Settings → Keyboard → Input Sources �
 
 ```bash
 cd ios && xcodegen generate      # Generate Xcode project
-xcodebuild -target PhraseKeyHost -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build
+# 模拟器构建（无需签名）：
+xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+# 装到已启动的模拟器：
+#   xcrun simctl boot "$(xcrun simctl list devices available -j | jq -r '.devices[][] | select(.name=="iPhone 17 Pro") | .udid' | head -1)"
+#   xcrun simctl install booted <DerivedData>/Build/Products/Debug-iphonesimulator/PhraseKey.app
+#   xcrun simctl launch booted com.phrasekey.ime
 ```
 
-Install on hardware: requires Apple Developer account. Open `ios/PhraseKeyIOS.xcodeproj` in Xcode, select your team, build & run.
+**真机运行（免费 Apple ID 即可，无需 $99）：**
+
+1. 打开 `ios/PhraseKeyIOS.xcodeproj`，按 [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md) 操作
+2. 两个 target（PhraseKeyHost / PhraseKeyKeyboard）都选你的 Apple ID 作为 Team
+3. 连接 iPhone → ⌘R 运行 → iPhone 上信任开发者 → 设置里添加 PhraseKey 键盘并开启「允许完全访问」
+
+> 免费账号限制：签名 7 天过期（重新 ⌘R 即可续签）、最多 3 个 Bundle ID。
 
 ## Xiaohe Shuangpin / Xingma
 
@@ -87,7 +98,7 @@ Install on hardware: requires Apple Developer account. Open `ios/PhraseKeyIOS.xc
 - [ ] User dictionary learning (auto-learn committed words)
 - [ ] Clipboard history (cross-device)
 - [ ] Full dictionary / Xingma code table import docs
-- [ ] iOS hardware signing guide (Apple Developer account required)
+- [x] iOS hardware signing guide (free Apple ID supported — see [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md))
 - [ ] Windows/Linux (TSF/ibus — port core engine)
 
 ## Repository
