@@ -2,12 +2,14 @@ import UIKit
 
 /// iOS 键盘扩展入口。
 ///
-/// 布局策略：**纯 frame 手工布局**（viewDidLayoutSubviews 里按 view.bounds 计算每个视图位置），
-/// 键盘内部不引入任何 Auto Layout 约束——彻底消灭「约束冲突 → 布局死循环 → 顶部闪烁 / 键盘不弹」。
-/// 键盘高度完全交给系统管理（不设任何高度约束）。
-///
-/// 加载路径零文件访问：绝不触碰 AppSettings.current（其静态初始化会 load() 读文件，
-/// 键盘扩展受限沙盒下文件访问会阻塞加载）。引擎用默认方案，词库延迟到首次输入时才可能加载。
+/// 关键修复（基于多轮真机实验的结论）：
+/// - 最小版（1 按钮 + Auto Layout 约束）稳定弹出；所有"零 Auto Layout 约束"的纯 frame 版
+///   都间歇性不弹/闪烁。结论：**键盘扩展的 view 必须有 Auto Layout 约束**，系统才能正确
+///   计算键盘尺寸并加载；无约束时系统不知道 view 有内容 → 间歇性加载失败。
+/// - 本版：keyArea 用 4 条 Auto Layout 约束填满 view（给系统锚点，不设固定高度，高度交系统默认），
+///   keyArea **内部全部 frame 手工布局**（候选条 + 键区 + 按钮）——零内部约束冲突。
+/// - 候选条用普通 UIView（键盘容器自带下滑收起手势，嵌套 UIScrollView 会拦截导致顶部闪烁）。
+/// - 加载路径零文件访问（受限沙盒文件 I/O 会阻塞加载），完全访问开关已正确暴露（RequestsOpenAccess）。
 final class KeyboardViewController: UIInputViewController {
 
     private var engine = MobileEngine(scheme: .pinyin)
@@ -32,17 +34,26 @@ final class KeyboardViewController: UIInputViewController {
         if !candidateButtons.isEmpty { layoutCandidates() }
     }
 
-    // MARK: - 构建 UI（仅创建子视图，位置全部交给 layoutFrames）
+    // MARK: - 构建 UI
 
     private func buildUI() {
         view.backgroundColor = UIColor(red: 0.784, green: 0.800, blue: 0.824, alpha: 1) // #C8CCD2
 
+        // 锚点容器：Auto Layout 填满 view（给系统尺寸锚点，无固定高度、无内部约束）
+        keyArea = UIView()
+        keyArea.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(keyArea)
+        NSLayoutConstraint.activate([
+            keyArea.topAnchor.constraint(equalTo: view.topAnchor),
+            keyArea.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            keyArea.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            keyArea.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+
+        // 候选条（顶部 40，frame 布局）
         candidateBar = UIView()
         candidateBar.backgroundColor = .white
-        view.addSubview(candidateBar)
-
-        keyArea = UIView()
-        view.addSubview(keyArea)
+        keyArea.addSubview(candidateBar)
 
         rebuildKeys()
     }
@@ -62,6 +73,12 @@ final class KeyboardViewController: UIInputViewController {
         keyArea.subviews.forEach { $0.removeFromSuperview() }
         keyRows = []
         bottomKeys = []
+        // 候选条先重加（被清掉了）
+        candidateBar = UIView()
+        candidateBar.backgroundColor = .white
+        keyArea.addSubview(candidateBar)
+        candidateButtons = []
+
         let rows: [[String]] = isNumberPad
             ? [["1","2","3","4","5","6","7","8","9","0"],
                ["-","/",":",";","(",")","$","&","@","\""],
@@ -101,17 +118,20 @@ final class KeyboardViewController: UIInputViewController {
         let w = view.bounds.width
         let h = view.bounds.height
         guard w > 0, h > 0 else { return }
+        let kw = keyArea.bounds.width
+        let kh = keyArea.bounds.height
+        guard kw > 0, kh > 0 else { return }
 
-        candidateBar.frame = CGRect(x: 0, y: 0, width: w, height: 40)
-        keyArea.frame = CGRect(x: 4, y: 46, width: w - 8, height: max(h - 52, 120))
-        let kr = keyArea.bounds
+        candidateBar.frame = CGRect(x: 0, y: 0, width: kw, height: 40)
+        let keysTop: CGFloat = 46
         let sp: CGFloat = 6
         let bottomH: CGFloat = 44
-        let mainH = keyRows.isEmpty ? 0 : (kr.height - bottomH - sp * 2) / CGFloat(keyRows.count)
-        var y: CGFloat = 0
+        let keysH = max(kh - keysTop - sp, 80)
+        let mainH = keyRows.isEmpty ? 0 : (keysH - bottomH - sp * 2) / CGFloat(keyRows.count)
+        var y: CGFloat = keysTop
         for btns in keyRows {
             let n = btns.count
-            let btnW = n > 0 ? (kr.width - sp * CGFloat(n - 1)) / CGFloat(n) : 0
+            let btnW = n > 0 ? (kw - sp * CGFloat(n - 1)) / CGFloat(n) : 0
             var x: CGFloat = 0
             for b in btns {
                 b.frame = CGRect(x: x, y: y, width: btnW, height: mainH)
@@ -120,7 +140,7 @@ final class KeyboardViewController: UIInputViewController {
             y += mainH + sp
         }
         // 底行
-        let bw = bottomKeys.isEmpty ? 0 : (kr.width - sp * 2) / CGFloat(bottomKeys.count)
+        let bw = bottomKeys.isEmpty ? 0 : (kw - sp * 2) / CGFloat(bottomKeys.count)
         for (i, b) in bottomKeys.enumerated() {
             b.frame = CGRect(x: CGFloat(i) * (bw + sp), y: y, width: bw, height: bottomH)
         }
@@ -129,9 +149,11 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: - 候选条
 
     private func layoutCandidates() {
-        // 候选按钮 frame 由 renderCandidates 计算，这里仅在 bounds 变化时由布局回调触发重排
         var x: CGFloat = 6
+        let cbw = max(candidateBar.bounds.width - 12, 100)
         for b in candidateButtons {
+            if x + b.frame.width > cbw + 8 { b.isHidden = true; continue }
+            b.isHidden = false
             b.frame.origin.x = x
             x += b.frame.width + 8
         }
@@ -182,7 +204,6 @@ final class KeyboardViewController: UIInputViewController {
         case "123", "ABC":
             isNumberPad.toggle()
             rebuildKeys()
-            layoutFrames()
             renderCandidates()
             return
         case ".#+=":
@@ -215,7 +236,6 @@ final class KeyboardViewController: UIInputViewController {
         // 方案切换仅内存生效；不碰 AppSettings（受限沙盒文件访问问题，持久化后续处理）
         renderCandidates()
         rebuildKeys()
-        layoutFrames()
     }
 
     private func schemeShort() -> String {

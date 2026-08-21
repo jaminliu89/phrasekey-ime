@@ -40,8 +40,8 @@ targets:
         NSExtension:
           NSExtensionAttributes:
             # 必须放在 NSExtensionAttributes 下，系统才会显示「允许完全访问」开关；
-            # 放错层级 = 开关不出现 = 键盘受限沙盒运行 = 访问 App Group 崩溃
-            RequestOpenAccess: true
+            # 键名必须是 RequestsOpenAccess（复数 Requests，少 s 系统不识别 = 开关不出现）
+            RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
     settings:

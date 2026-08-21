@@ -24,7 +24,7 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
-			<key>RequestOpenAccess</key>
+			<key>RequestsOpenAccess</key>
 			<true/>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
