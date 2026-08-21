@@ -2,7 +2,10 @@
 
 **开源跨端输入法，以「常用语/词库跨端同步」为核心差异化，外观借鉴 Google 输入法（Gboard）。**
 
-完全自研，不 fork 上游。Swift 原生 + InputMethodKit（macOS），引擎层平台无关可跨端复用。
+完全自研，不 fork 上游。Swift 原生 + InputMethodKit（macOS）+ 键盘扩展（iOS），引擎层平台无关可跨端复用。
+
+- GitHub: https://github.com/jaminliu89/phrasekey-ime
+- Gitee: https://gitee.com/jaminkim/phrasekey-ime
 
 ## 解决大部分人的痛点（调研结论）
 
@@ -70,13 +73,30 @@ bash Scripts/install.sh        # 安装到 ~/Library/Input Methods
 
 ## Roadmap
 
-- [x] v0.1：IMK 骨架 + 引擎 + 常用语 + Google 外观 + 小鹤双拼/音形 + 跨端数据层
+- [x] v0.1：IMK 骨架 + 引擎 + 常用语 + Google 外观
+- [x] v0.2：小鹤双拼/音形 + 跨端数据层 + iOS 键盘扩展（双端数据 App Group 共享）
 - [ ] 词库用户学习（自动收录上屏词）
 - [ ] 剪贴板历史（跨端同步）
 - [ ] 完整词库/音形码表接入文档
-- [ ] iOS 键盘扩展（复用引擎）
+- [ ] iOS 真机签名发布（需 Apple 开发者账号）
 - [ ] Windows/Linux（引擎 Rust/C 移植）
 - [ ] 自建同步服务（可选，零依赖云端）
+
+## 目录结构
+
+```
+Sources/PhraseKeyIME/    # macOS IMK 输入法（SwiftPM）
+  ├── Engine/            # 平台无关引擎（拼音/双拼/音形/词库/常用语）
+  ├── Hotwords/          # 常用语存储（WeType hotWordList 兼容）
+  ├── Settings/          # 方案/配置（config.json，可同步）
+  ├── UI/                # Gboard 外观候选条
+  └── Controller.swift   # IMK 主逻辑
+ios/                     # iOS 键盘扩展 + 宿主 App（XcodeGen 生成 xcodeproj）
+  ├── project.yml        # 工程定义（xcodegen generate）
+  ├── PhraseKeyKeyboard/ # 键盘扩展（复用 Engine/）
+  └── PhraseKeyHost/     # 宿主引导 App
+Scripts/                 # 构建/安装脚本
+```
 
 ## 许可
 
