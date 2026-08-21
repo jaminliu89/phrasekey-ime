@@ -17,3 +17,4 @@ dist/
 
 # 本地数据（不进库）
 *.icns.tmp
+ios/build/

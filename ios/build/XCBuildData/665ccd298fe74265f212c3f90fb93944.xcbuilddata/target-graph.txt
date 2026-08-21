@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'PhraseKeyKeyboard' in project 'PhraseKeyIOS' (no dependencies)
