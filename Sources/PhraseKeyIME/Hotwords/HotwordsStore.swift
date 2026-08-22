@@ -26,11 +26,23 @@ final class HotwordsStore {
     private let fileURL: URL
 
     private init() {
-        // 键盘扩展受限沙盒：跳过一切文件访问（AppSettings.current 触发 FileManager 查询会被
-        // 拦截阻塞 → watchdog 杀进程 → 键盘"能弹但不持久"）。热词仅宿主/桌面端持久化。
+        // 键盘扩展：从 App Group 共享容器读宿主写入的常用语（只读，不写）。
+        // 注：此处原先完全跳过文件访问，依据是"文件访问会被沙盒拦截造成 watchdog 杀进程"，
+        // 该猜想已被对照实验证伪 —— 真因是 Info.plist 缺 PrimaryLanguage 导致扩展未被拉起。
+        // App Group 容器已验证可用（设备端容器存在且被宿主写入过）。
+        // 常用语是 PhraseKey 的核心卖点，键盘用不到等于产品没意义。
         if AppSettings.isKeyboardExtension {
-            fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("hotwords.json")
-            items = []
+            if let shared = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: HotwordsStore.appGroupID) {
+                fileURL = shared
+                    .appendingPathComponent("PhraseKey")
+                    .appendingPathComponent("hotwords.json")
+                load()
+            } else {
+                fileURL = URL(fileURLWithPath: NSTemporaryDirectory())
+                    .appendingPathComponent("hotwords.json")
+                items = []
+            }
             return
         }
         let folder = AppSettings.current.resolvedDataDir
@@ -38,6 +50,9 @@ final class HotwordsStore {
         fileURL = folder.appendingPathComponent("hotwords.json")
         load()
     }
+
+    /// App Group：宿主写、键盘扩展读。与 ios/*.entitlements 保持一致。
+    static let appGroupID = "group.com.phrasekey.ime"
 
     // MARK: - Persistence
 

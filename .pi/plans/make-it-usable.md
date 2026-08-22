@@ -93,3 +93,54 @@
 - [ ] 不锁屏连续切换键盘 10 次，记录第几次开始失效
 - [ ] 抓取键盘切换瞬间日志（Scripts/capture_keyboard_log.sh），找 pkd/PlugInKit 的 reason code
 - [ ] 查证 iOS 26/27 是否有第三方键盘已知 bug（调研中）
+
+---
+
+## 2026-08-23 定性完成：真凶是 Info.plist 缺必需键
+
+### 结论（已验证）
+键盘扩展 `NSExtensionAttributes` **缺 `PrimaryLanguage`**（另缺 `IsASCIICapable`、`PrefersRightToLeft`）。
+缺失时系统能把键盘注册进「设置→键盘」列表，但**拉起扩展进程时判定配置无效直接拒绝**。
+
+**验证证据**：
+```
+$ xcrun devicectl device info processes | grep PhraseKey
+46985  .../PhraseKey.app/PlugIns/PhraseKeyKeyboard.appex/PhraseKeyKeyboard
+```
+补键前该进程从不出现，补键后出现且用户实测键盘正常存活。
+
+### 这解释了所有此前无法解释的现象
+| 现象 | 解释 |
+|---|---|
+| 设置里看得见键盘 | 注册进列表只需 bundle 结构正确 |
+| 切过去不出现 / 闪 | 拉起进程时配置校验失败 |
+| 崩溃报告里找不到它 | 从未启动，自然没有崩溃 |
+| Jetsam 里找不到它 | 同上 |
+| 进程列表里 BareKBExt 在跑、它没有 | 直接证据 |
+
+### 定位手段：空壳对照组法（本轮最大收获）
+编译零依赖键盘 BareKB，**同设备/同系统/同免费 Team/同签名**，唯独代码极简。
+它长期存活 → 一刀切开「环境问题」与「本项目问题」。
+随后逐项 diff：先 diff 代码（发现手动 frame 布局、缺高度约束），
+再 **dump 两份 Info.plist 逐键对比** → 定位到 plist 必需键缺失。
+
+**教训：应该在做代码 diff 之前就先 diff 配置**，这一步零成本且不需要用户参与，我却放到最后才做。
+
+### 一并修掉的真问题（非死因但必要）
+1. 手动 frame 布局依赖 `keyArea.bounds`（viewDidLoad 时为 0）与 `UIScreen.main`（扩展内不代表键盘尺寸）
+   → 已重写为 UIStackView 纯约束。这是用户反馈「不像完整输入法、像占位」的原因。
+2. `inputView` 关掉 autoresizing 后无高度来源 → 已加 heightAnchor 268
+3. 键盘包内曾打入 20 万词全量词库（实测净增 93MB，超扩展预算）→ 已换 3 万条移动版（10.6MB）
+4. 引擎音节表与切分器 10 项 bug → 已修，回归全绿
+5. 补齐输入法必备功能：拼音显示区、候选横滑（30 候选）、Shift、符号层、handleInputModeList
+
+### 已证伪并需清理的错误结论
+- ~~「免费 Apple ID 签名固有问题」~~ —— 曾写进源码注释，已删除
+- ~~「Debug Dylib 会导致加载失败」~~ —— BareKB 带 debug.dylib 照样活，注释已更正
+- ~~「切换键盘无法自动化」~~ —— 项目本就有 UITests target
+
+### 下一步（iOS 优先）
+- [ ] 长时存活观察：正常使用一段时间后复查进程是否仍在
+- [ ] 真机内存实测（3 万词库实际占用，此前为 macOS 等比推算）
+- [ ] 输入体验验收：候选准确率、常用语优先级、双拼/音形切换
+- [ ] 常用语在 iOS 端的读取（当前扩展内 HotwordsStore 被 gate 掉，键盘用不到常用语——这是核心卖点缺失）
