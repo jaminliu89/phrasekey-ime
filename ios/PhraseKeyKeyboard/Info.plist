@@ -24,6 +24,12 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
+			<key>IsASCIICapable</key>
+			<false/>
+			<key>PrefersRightToLeft</key>
+			<false/>
+			<key>PrimaryLanguage</key>
+			<string>zh-Hans</string>
 			<key>RequestsOpenAccess</key>
 			<false/>
 		</dict>

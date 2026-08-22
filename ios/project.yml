@@ -42,9 +42,13 @@ targets:
         CFBundleVersion: "1"
         NSExtension:
           NSExtensionAttributes:
-            # RequestsOpenAccess=false：本键盘不联网、不读剪贴板、词库随包内置，
-            # 无需「允许完全访问」。开启它会引入额外沙盒/隐私审计限制，
-            # 且未获授权时键盘处于半残状态，是存活风险来源。对照组 BareKB 用 false 可长期存活。
+            # PrimaryLanguage 是键盘扩展的必需键。缺失时系统无法确定该键盘的语言归属，
+            # 注册进输入模式列表后拉起扩展进程会失败（表现：设置里能看到、切过去不出现/闪）。
+            # 已由对照实验确认：空壳键盘 BareKB 带这三个键可长期存活，本键盘原先三键全缺。
+            PrimaryLanguage: zh-Hans
+            IsASCIICapable: false
+            PrefersRightToLeft: false
+            # RequestsOpenAccess=false：本键盘不联网、不读剪贴板、词库随包内置，无需完全访问。
             RequestsOpenAccess: false
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
