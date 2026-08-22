@@ -52,9 +52,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.phrasekey.ime.keyboard
         PRODUCT_NAME: PhraseKeyKeyboard
-        # 关键：键盘扩展必须关闭 Debug Dylib（ENABLE_DEBUG_DYLIB）。
-        # Debug 模式的 debug.dylib 会让主可执行变成 stub，符号不在里面，
-        # 系统加载扩展时找不到 NSExtensionPrincipalClass → 键盘加载失败被跳过（真机表现为闪退）。
+        # 关闭 Debug Dylib：保守设置，让主类符号确定留在主可执行内。
+        # 注：曾推测"带 debug.dylib 会导致键盘加载失败"，已被对照实验证伪——
+        # 对照组 BareKB 带着 debug.dylib + __preview.dylib 仍长期存活。
+        # 保留 NO 只是为了减少变量，不是因为它是死因。
         ENABLE_DEBUG_DYLIB: NO
         CODE_SIGN_ENTITLEMENTS: PhraseKeyKeyboard/PhraseKeyKeyboard.entitlements
 

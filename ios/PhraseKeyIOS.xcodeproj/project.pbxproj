@@ -18,6 +18,7 @@
 		2FD4415A74FAABA7207CD5B9 /* PinyinSyllable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF109F23059DA35897457F9 /* PinyinSyllable.swift */; };
 		3127606194632893BE85FEF6 /* CodeTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983453366666F51FAE68E511 /* CodeTable.swift */; };
 		48548C3EF688FD2CEC7ACC15 /* PhraseKey.svg in Resources */ = {isa = PBXBuildFile; fileRef = 30E2B282467E45F52CE61141 /* PhraseKey.svg */; };
+		49AB1D1A62E3E8B907F36ADB /* KeyboardSurvivalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A6F23232C55C6B329F7F19 /* KeyboardSurvivalTests.swift */; };
 		4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */ = {isa = PBXBuildFile; fileRef = FBCBA1218B7F091DAC1DC45B /* dict.tsv */; };
 		52DB52F2EBCCABD896EB7D43 /* PhraseKeyKeyboardUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9B1A83C106B0FDC9AC57E0 /* PhraseKeyKeyboardUITests.swift */; };
 		801E5D2F9C43A68DC85233C0 /* FlypyCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */; };
@@ -72,6 +73,7 @@
 		30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinEngine.swift; sourceTree = "<group>"; };
 		30E2B282467E45F52CE61141 /* PhraseKey.svg */ = {isa = PBXFileReference; path = PhraseKey.svg; sourceTree = "<group>"; };
 		3E39A9C1DD839DE3BF9ED37F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		40A6F23232C55C6B329F7F19 /* KeyboardSurvivalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSurvivalTests.swift; sourceTree = "<group>"; };
 		57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseKeySettings.swift; sourceTree = "<group>"; };
 		5DF109F23059DA35897457F9 /* PinyinSyllable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinSyllable.swift; sourceTree = "<group>"; };
 		6D78BCEBEE2DDF976B240FFF /* PhraseKeyHost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseKeyHost.entitlements; sourceTree = "<group>"; };
@@ -176,6 +178,7 @@
 		A474D2D8E70825A5CF45E7CB /* PhraseKeyKeyboardUITests */ = {
 			isa = PBXGroup;
 			children = (
+				40A6F23232C55C6B329F7F19 /* KeyboardSurvivalTests.swift */,
 				0A9B1A83C106B0FDC9AC57E0 /* PhraseKeyKeyboardUITests.swift */,
 			);
 			path = PhraseKeyKeyboardUITests;
@@ -350,6 +353,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				49AB1D1A62E3E8B907F36ADB /* KeyboardSurvivalTests.swift in Sources */,
 				52DB52F2EBCCABD896EB7D43 /* PhraseKeyKeyboardUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

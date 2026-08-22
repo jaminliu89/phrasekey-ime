@@ -2,269 +2,336 @@ import UIKit
 
 /// iOS 键盘扩展主控制器。
 ///
-/// 存活铁律（经对照实验验证：空壳键盘 BareKB 可长期存活，本键盘原先“活不久”）：
-/// **viewDidLoad 必须同步建完整个可交互 UI**。若把建 UI 延后到引擎异步加载完成，
-/// 系统首次展示键盘时只能拿到一个空白、无响应的 inputView，会被判定为加载失败，
-/// 累计多次后系统会惩罚性停止加载该键盘（表现：偶尔能弹、弹出也活不久）。
-/// 因此：UI 同步建（不依赖引擎），词库引擎异步补，引擎未就绪时按键仍可直接上屏字母。
+/// 布局铁律（经对照实验确认）：
+/// **全程使用 Auto Layout / UIStackView，禁止手动 frame 布局。**
+/// 键盘扩展内 `view.bounds` 在 viewDidLoad 阶段为 0，`UIScreen.main` 也不代表键盘尺寸；
+/// 依赖它们做 frame 计算会得到错乱布局，系统判定键盘无效 → 惩罚性停止加载
+/// （表现："偶尔能弹、活不久"）。空壳对照组 BareKB 全程用约束，可长期存活。
+///
+/// 存活铁律：viewDidLoad 必须同步建完整个可交互 UI，词库异步补。
 final class KeyboardViewController: UIInputViewController {
 
+    // MARK: - 状态
+
     private var engine: MobileEngine?
-    private var candidateBar: UIView!
-    private var candidateButtons: [UIButton] = []
-    private var keyArea: UIView!
-    private var keyRows: [[UIButton]] = []
-    private var bottomKeys: [UIButton] = []
     private var isNumberPad = false
-    private var didBuildContent = false
+    private var isSymbolPad = false
+    private var isShifted = false
+
+    // MARK: - 视图
+
+    private let composeLabel = UILabel()          // 拼音显示区
+    private let candidateScroll = UIScrollView()  // 候选横向滚动
+    private let candidateStack = UIStackView()
+    private let rowsStack = UIStackView()         // 字母区 + 底行
+    private var schemeButton: UIButton?
+    private var shiftButton: UIButton?
+
+    private enum Metric {
+        static let kbHeight: CGFloat = 268
+        static let barHeight: CGFloat = 42
+        static let rowSpacing: CGFloat = 6
+        static let keySpacing: CGFloat = 5
+        static let sideInset: CGFloat = 3
+        static let bottomHeight: CGFloat = 44
+    }
 
     // MARK: - 生命周期
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let kbView = UIInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 260), inputViewStyle: .keyboard)
+        let kbView = UIInputView(frame: CGRect(x: 0, y: 0, width: 320, height: Metric.kbHeight),
+                                 inputViewStyle: .keyboard)
         kbView.translatesAutoresizingMaskIntoConstraints = false
-        kbView.backgroundColor = UIColor(red: 0.784, green: 0.800, blue: 0.824, alpha: 1)
+        kbView.allowsSelfSizing = true
         self.inputView = kbView
 
-        keyArea = UIView()
-        keyArea.translatesAutoresizingMaskIntoConstraints = false
-        kbView.addSubview(keyArea)
-        NSLayoutConstraint.activate([
-            keyArea.topAnchor.constraint(equalTo: kbView.topAnchor),
-            keyArea.bottomAnchor.constraint(equalTo: kbView.bottomAnchor),
-            keyArea.leadingAnchor.constraint(equalTo: kbView.leadingAnchor),
-            keyArea.trailingAnchor.constraint(equalTo: kbView.trailingAnchor),
-        ])
+        // 显式高度约束：关掉 autoresizing 后 frame 高度失效，必须给约束，
+        // 否则 Auto Layout 解出高度 0 / 约束冲突，系统判定加载失败。
+        kbView.heightAnchor.constraint(equalToConstant: Metric.kbHeight).isActive = true
 
-        // ① 同步建完 UI（rebuildKeys 不依赖 engine）——不可延后，详见类注释的存活铁律。
-        buildContent()
+        buildUI(in: kbView)
 
-        // ② 引擎（词库）异步加载，不阻塞首帧；就绪后仅刷新候选区。
+        // 词库异步加载：不阻塞首帧。就绪前按键降级为直接上屏字符。
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let eng = MobileEngine(scheme: .pinyin)
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.engine = eng
+                self.schemeButton?.setTitle(self.schemeShort(), for: .normal)
                 self.renderCandidates()
             }
         }
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        if didBuildContent {
-            layoutFrames()
-            if !candidateButtons.isEmpty { layoutCandidates() }
-        }
-    }
+    // MARK: - UI 构建（全约束，无 frame 计算）
 
-    // MARK: - 构建内容
+    private func buildUI(in host: UIView) {
+        // ── 顶部：拼音显示 + 候选滚动条 ──
+        composeLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        composeLabel.textColor = UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1)
+        composeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        composeLabel.setContentHuggingPriority(.required, for: .horizontal)
 
-    private func buildContent() {
+        candidateStack.axis = .horizontal
+        candidateStack.spacing = 4
+        candidateStack.alignment = .fill
+        candidateStack.translatesAutoresizingMaskIntoConstraints = false
+
+        candidateScroll.showsHorizontalScrollIndicator = false
+        candidateScroll.translatesAutoresizingMaskIntoConstraints = false
+        candidateScroll.addSubview(candidateStack)
+        NSLayoutConstraint.activate([
+            candidateStack.leadingAnchor.constraint(equalTo: candidateScroll.contentLayoutGuide.leadingAnchor),
+            candidateStack.trailingAnchor.constraint(equalTo: candidateScroll.contentLayoutGuide.trailingAnchor),
+            candidateStack.topAnchor.constraint(equalTo: candidateScroll.contentLayoutGuide.topAnchor),
+            candidateStack.bottomAnchor.constraint(equalTo: candidateScroll.contentLayoutGuide.bottomAnchor),
+            candidateStack.heightAnchor.constraint(equalTo: candidateScroll.frameLayoutGuide.heightAnchor),
+        ])
+
+        let topBar = UIStackView(arrangedSubviews: [composeLabel, candidateScroll])
+        topBar.axis = .horizontal
+        topBar.spacing = 8
+        topBar.alignment = .fill
+        topBar.isLayoutMarginsRelativeArrangement = true
+        topBar.layoutMargins = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+
+        // ── 按键区 ──
+        rowsStack.axis = .vertical
+        rowsStack.spacing = Metric.rowSpacing
+        rowsStack.distribution = .fillEqually
+
+        let root = UIStackView(arrangedSubviews: [topBar, rowsStack])
+        root.axis = .vertical
+        root.spacing = 4
+        root.translatesAutoresizingMaskIntoConstraints = false
+        host.addSubview(root)
+
+        NSLayoutConstraint.activate([
+            root.topAnchor.constraint(equalTo: host.topAnchor, constant: 4),
+            root.bottomAnchor.constraint(equalTo: host.bottomAnchor, constant: -4),
+            root.leadingAnchor.constraint(equalTo: host.leadingAnchor, constant: Metric.sideInset),
+            root.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -Metric.sideInset),
+            topBar.heightAnchor.constraint(equalToConstant: Metric.barHeight),
+        ])
+
         rebuildKeys()
-        didBuildContent = true
-        layoutFrames()
     }
 
-    private func makeKey(_ title: String) -> UIButton {
-        let btn = UIButton(type: .system)
-        btn.setTitle(title, for: .normal)
-        btn.setTitleColor(.black, for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
-        btn.backgroundColor = .white
-        btn.layer.cornerRadius = 6
-        btn.addTarget(self, action: #selector(keyPressed(_:)), for: .touchUpInside)
-        return btn
+    private func makeKey(_ title: String, wide: Bool = false, dark: Bool = false) -> UIButton {
+        let b = UIButton(type: .system)
+        b.setTitle(title, for: .normal)
+        b.setTitleColor(.black, for: .normal)
+        b.titleLabel?.font = .systemFont(ofSize: title.count > 1 ? 15 : 21, weight: .regular)
+        b.titleLabel?.adjustsFontSizeToFitWidth = true
+        b.titleLabel?.minimumScaleFactor = 0.7
+        b.backgroundColor = dark ? UIColor(white: 0.68, alpha: 1) : .white
+        b.layer.cornerRadius = 6
+        b.layer.shadowColor = UIColor.black.withAlphaComponent(0.25).cgColor
+        b.layer.shadowOffset = CGSize(width: 0, height: 1)
+        b.layer.shadowRadius = 0
+        b.layer.shadowOpacity = 1
+        b.addTarget(self, action: #selector(keyPressed(_:)), for: .touchUpInside)
+        if wide { b.setContentCompressionResistancePriority(.defaultLow, for: .horizontal) }
+        return b
+    }
+
+    private func makeRow(_ keys: [String], inset: CGFloat = 0) -> UIStackView {
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.spacing = Metric.keySpacing
+        row.distribution = .fillEqually
+        for k in keys { row.addArrangedSubview(makeKey(displayTitle(k))) }
+        guard inset > 0 else { return row }
+        let wrap = UIStackView(arrangedSubviews: [row])
+        wrap.isLayoutMarginsRelativeArrangement = true
+        wrap.layoutMargins = UIEdgeInsets(top: 0, left: inset, bottom: 0, right: inset)
+        return wrap
+    }
+
+    private func displayTitle(_ k: String) -> String {
+        guard !isNumberPad, !isSymbolPad, k.count == 1, k.first!.isLetter else { return k }
+        return isShifted ? k.uppercased() : k
     }
 
     private func rebuildKeys() {
-        keyArea.subviews.forEach { $0.removeFromSuperview() }
-        keyRows = []
-        bottomKeys = []
+        rowsStack.arrangedSubviews.forEach {
+            rowsStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
 
-        // 候选条
-        candidateBar = UIView()
-        candidateBar.backgroundColor = .white
-        keyArea.addSubview(candidateBar)
-        candidateButtons = []
+        let rows: [[String]]
+        if isNumberPad {
+            rows = [["1","2","3","4","5","6","7","8","9","0"],
+                    ["-","/",":",";","(",")","¥","&","@","\""],
+                    ["#+=",".",",","?","!","'","⌫"]]
+        } else if isSymbolPad {
+            rows = [["[","]","{","}","#","%","^","*","+","="],
+                    ["_","\\","|","~","<",">","€","£","•","·"],
+                    ["123",".",",","?","!","'","⌫"]]
+        } else {
+            rows = [["q","w","e","r","t","y","u","i","o","p"],
+                    ["a","s","d","f","g","h","j","k","l"],
+                    ["⇧","z","x","c","v","b","n","m","⌫"]]
+        }
 
-        let rows: [[String]] = isNumberPad
-            ? [["1","2","3","4","5","6","7","8","9","0"],
-               ["-","/",":",";","(",")","$","&","@","\""],
-               [".#+=", ".", ",", "?", "!", "'", "⌫"]]
-            : [["q","w","e","r","t","y","u","i","o","p"],
-               ["a","s","d","f","g","h","j","k","l"],
-               ["123", "z","x","c","v","b","n","m", "⌫"]]
-        for row in rows {
-            var btns: [UIButton] = []
-            for key in row {
-                let b = makeKey(key)
-                keyArea.addSubview(b)
-                btns.append(b)
+        rowsStack.addArrangedSubview(makeRow(rows[0]))
+        rowsStack.addArrangedSubview(makeRow(rows[1], inset: isNumberPad || isSymbolPad ? 0 : 18))
+
+        // 第三行：功能键需要不等宽，单独组装
+        let r3 = UIStackView()
+        r3.axis = .horizontal
+        r3.spacing = Metric.keySpacing
+        for k in rows[2] {
+            let isFn = k.count > 1 || k == "⇧" || k == "⌫"
+            let b = makeKey(displayTitle(k), dark: isFn)
+            if k == "⇧" {
+                b.backgroundColor = isShifted ? UIColor(white: 0.95, alpha: 1) : UIColor(white: 0.68, alpha: 1)
+                shiftButton = b
             }
-            keyRows.append(btns)
+            r3.addArrangedSubview(b)
+            if isFn { b.widthAnchor.constraint(equalToConstant: 44).isActive = true }
         }
+        // 让字母键平分剩余空间
+        let letters = r3.arrangedSubviews.filter { ($0 as? UIButton)?.backgroundColor == .white }
+        for v in letters.dropFirst() {
+            v.widthAnchor.constraint(equalTo: letters[0].widthAnchor).isActive = true
+        }
+        rowsStack.addArrangedSubview(r3)
 
-        // 底行：🌐 切换 | 方案 | 空格 | 回车
-        let globeBtn = makeKey("🌐")
-        globeBtn.addTarget(self, action: #selector(advanceToNextInputMode), for: .touchUpInside)
-        keyArea.addSubview(globeBtn)
-        bottomKeys.append(globeBtn)
+        // 底行：数字/符号 | 🌐 | 方案 | 空格 | 回车
+        let bottom = UIStackView()
+        bottom.axis = .horizontal
+        bottom.spacing = Metric.keySpacing
 
-        let schemeBtn = makeKey(schemeShort())
-        schemeBtn.addTarget(self, action: #selector(cycleScheme), for: .touchUpInside)
-        keyArea.addSubview(schemeBtn)
-        bottomKeys.append(schemeBtn)
+        let numKey = makeKey(isNumberPad || isSymbolPad ? "ABC" : "123", dark: true)
+        let globe = makeKey("🌐", dark: true)
+        globe.removeTarget(nil, action: nil, for: .allEvents)
+        globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+        let scheme = makeKey(schemeShort(), dark: true)
+        scheme.removeTarget(nil, action: nil, for: .allEvents)
+        scheme.addTarget(self, action: #selector(cycleScheme), for: .touchUpInside)
+        schemeButton = scheme
+        let space = makeKey("空格", wide: true)
+        space.removeTarget(nil, action: nil, for: .allEvents)
+        space.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
+        let ret = makeKey("⏎", dark: true)
+        ret.removeTarget(nil, action: nil, for: .allEvents)
+        ret.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
 
-        let spaceBtn = makeKey("空格")
-        spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
-        keyArea.addSubview(spaceBtn)
-        bottomKeys.append(spaceBtn)
+        [numKey, globe, scheme, space, ret].forEach { bottom.addArrangedSubview($0) }
+        numKey.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        globe.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        scheme.widthAnchor.constraint(equalToConstant: 48).isActive = true
+        ret.widthAnchor.constraint(equalToConstant: 60).isActive = true
 
-        let returnBtn = makeKey("⏎")
-        returnBtn.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
-        keyArea.addSubview(returnBtn)
-        bottomKeys.append(returnBtn)
+        rowsStack.addArrangedSubview(bottom)
+        bottom.heightAnchor.constraint(equalToConstant: Metric.bottomHeight).isActive = true
     }
 
-    // MARK: - 布局
-
-    private func layoutFrames() {
-        let w = keyArea.bounds.width > 0 ? keyArea.bounds.width : UIScreen.main.bounds.width
-        let h = keyArea.bounds.height > 0 ? keyArea.bounds.height : 260
-        guard w > 0, h > 0 else { return }
-
-        candidateBar.frame = CGRect(x: 0, y: 0, width: w, height: 40)
-        let keysTop: CGFloat = 46
-        let sp: CGFloat = 5
-        let bottomH: CGFloat = 42
-        let keysH = max(h - keysTop - sp, 80)
-        let mainH = keyRows.isEmpty ? 0 : (keysH - bottomH - sp * 2) / CGFloat(keyRows.count)
-        var y: CGFloat = keysTop
-        for btns in keyRows {
-            let n = btns.count
-            let btnW = n > 0 ? (w - sp * CGFloat(n - 1)) / CGFloat(n) : 0
-            var x: CGFloat = 0
-            for b in btns {
-                b.frame = CGRect(x: x, y: y, width: btnW, height: mainH)
-                x += btnW + sp
-            }
-            y += mainH + sp
-        }
-        // 底行
-        let bottomY = y
-        let globeW: CGFloat = 40
-        let schemeW: CGFloat = 50
-        let returnW: CGFloat = 50
-        let spaceW = w - globeW - schemeW - returnW - sp * 3
-        var bx: CGFloat = 0
-        bottomKeys[0].frame = CGRect(x: bx, y: bottomY, width: globeW, height: bottomH); bx += globeW + sp
-        bottomKeys[1].frame = CGRect(x: bx, y: bottomY, width: schemeW, height: bottomH); bx += schemeW + sp
-        bottomKeys[2].frame = CGRect(x: bx, y: bottomY, width: spaceW, height: bottomH); bx += spaceW + sp
-        bottomKeys[3].frame = CGRect(x: bx, y: bottomY, width: returnW, height: bottomH)
-    }
-
-    // MARK: - 候选条
-
-    private func layoutCandidates() {
-        var x: CGFloat = 6
-        let cbw = max(candidateBar.bounds.width - 12, 100)
-        for b in candidateButtons {
-            if x + b.frame.width > cbw + 8 { b.isHidden = true; continue }
-            b.isHidden = false
-            b.frame.origin.x = x
-            x += b.frame.width + 8
-        }
-    }
+    // MARK: - 候选与拼音显示
 
     private func renderCandidates() {
-        candidateButtons.forEach { $0.removeFromSuperview() }
-        candidateButtons = []
-        guard let engine else { return }
-        var x: CGFloat = 6
-        let h: CGFloat = 34
-        let maxW = max(candidateBar.bounds.width - 12, 100)
-        for c in engine.candidates.prefix(12) {
-            let btn = UIButton(type: .system)
-            let mark = c.type == "hotword" ? "⌘ " : ""
-            let txt = c.text.count > 14 ? String(c.text.prefix(14)) + "…" : c.text
-            btn.setTitle(mark + txt, for: .normal)
-            btn.setTitleColor(c.type == "hotword" ? UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1) : .black, for: .normal)
-            btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
-            btn.sizeToFit()
-            let w = min(btn.frame.width + 24, maxW)
-            if x + w > maxW + 8 { break }
-            btn.frame = CGRect(x: x, y: 3, width: w, height: h)
-            btn.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)
-            candidateBar.addSubview(btn)
-            candidateButtons.append(btn)
-            x += w + 8
+        candidateStack.arrangedSubviews.forEach {
+            candidateStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
         }
+        composeLabel.text = engine?.composing.isEmpty == false ? engine?.composing : nil
+
+        guard let engine, !engine.candidates.isEmpty else { return }
+        for (i, c) in engine.candidates.prefix(30).enumerated() {
+            let b = UIButton(type: .system)
+            let mark = c.type == "hotword" ? "⌘ " : ""
+            b.setTitle(mark + c.text, for: .normal)
+            b.setTitleColor(c.type == "hotword"
+                            ? UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1) : .black,
+                            for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 17, weight: i == 0 ? .semibold : .regular)
+            b.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+            b.tag = i
+            b.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)
+            candidateStack.addArrangedSubview(b)
+        }
+        candidateScroll.setContentOffset(.zero, animated: false)
     }
 
     @objc private func candidateTapped(_ sender: UIButton) {
-        guard let engine else { return }
-        if let idx = candidateButtons.firstIndex(of: sender),
-           let text = engine.commit(at: idx) {
-            textDocumentProxy.insertText(text)
-        }
+        guard let engine, let text = engine.commit(at: sender.tag) else { return }
+        textDocumentProxy.insertText(text)
         renderCandidates()
     }
 
-    // MARK: - 按键
+    // MARK: - 按键处理
 
     @objc private func keyPressed(_ sender: UIButton) {
-        guard let title = sender.title(for: .normal) else { return }
+        guard let raw = sender.title(for: .normal) else { return }
+        let title = raw.lowercased()
 
-        // 引擎尚未就绪（词库异步加载中）：不能默不作声，否则键盘看上去像死了。
-        // 降级为直接上屏字符，保证任何时刻按键都有反馈。
-        guard let engine else {
-            switch title {
-            case "⌫": textDocumentProxy.deleteBackward()
-            case "123", "ABC":
-                isNumberPad.toggle()
-                rebuildKeys()
-                layoutFrames()
-            case ".#+=": break
-            default:
-                if title.count == 1 { textDocumentProxy.insertText(title) }
-            }
-            return
-        }
-
-        switch title {
+        switch raw {
         case "⌫":
-            if engine.composing.isEmpty {
-                textDocumentProxy.deleteBackward()
-            } else {
+            if let engine, !engine.composing.isEmpty {
                 engine.deleteLast()
+            } else {
+                textDocumentProxy.deleteBackward()
             }
-        case "123", "ABC":
-            isNumberPad.toggle()
-            rebuildKeys()
             renderCandidates()
             return
-        case ".#+=":
+        case "⇧":
+            isShifted.toggle()
+            rebuildKeys()
+            return
+        case "123", "ABC":
+            isNumberPad.toggle()
+            isSymbolPad = false
+            rebuildKeys()
+            return
+        case "#+=":
+            isSymbolPad = true
+            isNumberPad = false
+            rebuildKeys()
             return
         default:
-            if title.count == 1 {
-                engine.append(title.first!)
-            }
+            break
         }
+
+        // 非字母（数字/符号）直接上屏
+        guard raw.count == 1, raw.first!.isLetter else {
+            textDocumentProxy.insertText(raw)
+            return
+        }
+
+        // 大写状态：视为直接输入字母（不进拼音引擎），符合系统键盘习惯
+        if isShifted {
+            textDocumentProxy.insertText(raw)
+            isShifted = false
+            rebuildKeys()
+            return
+        }
+
+        // 引擎未就绪时降级直接上屏，保证按键始终有反馈
+        guard let engine else {
+            textDocumentProxy.insertText(title)
+            return
+        }
+        engine.append(title.first!)
         renderCandidates()
     }
 
     @objc private func spacePressed() {
-        guard let engine else { return }
-        let t = engine.space()
-        textDocumentProxy.insertText(t)
+        guard let engine else {
+            textDocumentProxy.insertText(" ")
+            return
+        }
+        textDocumentProxy.insertText(engine.space())
         renderCandidates()
     }
 
     @objc private func returnPressed() {
-        guard let engine else { return }
+        guard let engine else {
+            textDocumentProxy.insertText("\n")
+            return
+        }
         let t = engine.commitRaw()
         textDocumentProxy.insertText(t.isEmpty ? "\n" : t)
         renderCandidates()
@@ -273,19 +340,18 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func cycleScheme() {
         guard let engine else { return }
         let all = InputScheme.allCases
-        let cur = all.firstIndex(of: engine.scheme) ?? 0
-        let next = all[(cur + 1) % all.count]
+        let next = all[((all.firstIndex(of: engine.scheme) ?? 0) + 1) % all.count]
         self.engine = MobileEngine(scheme: next)
+        schemeButton?.setTitle(schemeShort(), for: .normal)
         renderCandidates()
-        rebuildKeys()
     }
 
     private func schemeShort() -> String {
-        guard let engine else { return "..." }
-        switch engine.scheme {
+        switch engine?.scheme {
         case .pinyin: return "全拼"
         case .flypy: return "双拼"
         case .flypyXing: return "音形"
+        case nil: return "…"
         }
     }
 }
