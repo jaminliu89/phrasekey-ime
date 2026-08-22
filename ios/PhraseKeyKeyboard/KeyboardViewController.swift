@@ -28,8 +28,9 @@ final class KeyboardViewController: UIInputViewController {
     private var shiftButton: UIButton?
 
     private enum Metric {
-        static let kbHeight: CGFloat = 268
-        static let barHeight: CGFloat = 42
+        static let kbHeight: CGFloat = 290
+        static let composeHeight: CGFloat = 20
+        static let candidateHeight: CGFloat = 42
         static let rowSpacing: CGFloat = 6
         static let keySpacing: CGFloat = 5
         static let sideInset: CGFloat = 3
@@ -41,17 +42,20 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let kbView = UIInputView(frame: CGRect(x: 0, y: 0, width: 320, height: Metric.kbHeight),
-                                 inputViewStyle: .keyboard)
-        kbView.translatesAutoresizingMaskIntoConstraints = false
-        kbView.allowsSelfSizing = true
-        self.inputView = kbView
+        // 键盘扩展的根视图由输入系统托管，其宽度已被系统铺满，不要自己动它的宽度；
+        // 只需给一个高度约束（优先级留一档，避免旋转/浮动键盘时与系统约束冲突）。
+        //
+        // 历史坑（两次都栽在同一件事上）：
+        //   自建 UIInputView(frame:) 并关掉 translatesAutoresizingMaskIntoConstraints 后，
+        //   frame 里的宽和高**同时**失效。第一次只补了 heightAnchor，
+        //   宽度仍无约束来源 → Auto Layout 按内容固有宽度收缩 → 键盘成窄条（"单手键盘"）。
+        // 结论：直接用系统给的 self.view 作为容器最稳，宽度交给系统。
+        let host = view!
+        let hc = host.heightAnchor.constraint(equalToConstant: Metric.kbHeight)
+        hc.priority = UILayoutPriority(999)
+        hc.isActive = true
 
-        // 显式高度约束：关掉 autoresizing 后 frame 高度失效，必须给约束，
-        // 否则 Auto Layout 解出高度 0 / 约束冲突，系统判定加载失败。
-        kbView.heightAnchor.constraint(equalToConstant: Metric.kbHeight).isActive = true
-
-        buildUI(in: kbView)
+        buildUI(in: host)
 
         // 词库异步加载：不阻塞首帧。就绪前按键降级为直接上屏字符。
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -71,8 +75,7 @@ final class KeyboardViewController: UIInputViewController {
         // ── 顶部：拼音显示 + 候选滚动条 ──
         composeLabel.font = .systemFont(ofSize: 15, weight: .medium)
         composeLabel.textColor = UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1)
-        composeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        composeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        composeLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         candidateStack.axis = .horizontal
         candidateStack.spacing = 4
@@ -90,12 +93,17 @@ final class KeyboardViewController: UIInputViewController {
             candidateStack.heightAnchor.constraint(equalTo: candidateScroll.frameLayoutGuide.heightAnchor),
         ])
 
-        let topBar = UIStackView(arrangedSubviews: [composeLabel, candidateScroll])
-        topBar.axis = .horizontal
-        topBar.spacing = 8
-        topBar.alignment = .fill
-        topBar.isLayoutMarginsRelativeArrangement = true
-        topBar.layoutMargins = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        // 拼音行与候选行必须上下分层：若并排放在同一横向 stack，
+        // composeLabel 的抗压缩优先级会把候选区挤到几乎没有宽度
+        // （表现：候选放不下、无法连续选词，像"单手键盘"）。
+        let composeRow = UIStackView(arrangedSubviews: [composeLabel, UIView()])
+        composeRow.axis = .horizontal
+        composeRow.isLayoutMarginsRelativeArrangement = true
+        composeRow.layoutMargins = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+
+        let topBar = UIStackView(arrangedSubviews: [composeRow, candidateScroll])
+        topBar.axis = .vertical
+        topBar.spacing = 2
 
         // ── 按键区 ──
         rowsStack.axis = .vertical
@@ -108,12 +116,15 @@ final class KeyboardViewController: UIInputViewController {
         root.translatesAutoresizingMaskIntoConstraints = false
         host.addSubview(root)
 
+        // 贴 safeArea：底部要避开 Home 指示条，否则最后一行按键被压在指示条下点不准
+        let guide = host.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             root.topAnchor.constraint(equalTo: host.topAnchor, constant: 4),
-            root.bottomAnchor.constraint(equalTo: host.bottomAnchor, constant: -4),
+            root.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -4),
             root.leadingAnchor.constraint(equalTo: host.leadingAnchor, constant: Metric.sideInset),
             root.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -Metric.sideInset),
-            topBar.heightAnchor.constraint(equalToConstant: Metric.barHeight),
+            composeRow.heightAnchor.constraint(equalToConstant: Metric.composeHeight),
+            candidateScroll.heightAnchor.constraint(equalToConstant: Metric.candidateHeight),
         ])
 
         rebuildKeys()

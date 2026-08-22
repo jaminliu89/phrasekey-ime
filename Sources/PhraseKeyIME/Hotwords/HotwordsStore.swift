@@ -68,8 +68,17 @@ final class HotwordsStore {
     func save() {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let data = try? encoder.encode(items) {
-            try? data.write(to: fileURL, options: .atomic)
+        guard let data = try? encoder.encode(items) else { return }
+        // 必须先确保父目录存在：App Group 容器下的 PhraseKey/ 子目录不会自动创建，
+        // 缺目录时 write 失败而 try? 会静默吞掉错误 → 表现为"常用语加不进去"。
+        let dir = fileURL.deletingLastPathComponent()
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        do {
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            NSLog("[PhraseKey] 常用语写入失败 %@: %@", fileURL.path, String(describing: error))
         }
     }
 
