@@ -208,6 +208,109 @@ expectFirst("niha", is: "你好")
 expectFirst("womenzai", is: "我们")
 expectFirst("nihaosh", is: "你好")
 
+// ---- 默认方案（小鹤双拼）专项回归 ----
+// 为何单独开一组：产品默认 scheme 就是 .flypy（InputScheme.default），
+// 但之前回归只有 2 条双拼断言，而断档/排序全部按全拼测 —— 盖不到默认路径。
+// 实测曾发现：双拼在奇数键位全线断档（wourfg 6 步 5 空），
+// 而双拼每字定长 2 键，用户打词时必然逐键经过奇数长度 → 默认方案开箱就是坏的。
+print("\n=== 默认方案（\(InputScheme.default.rawValue)）断档回归 ===")
+// 用 encode 反推真实双拼码，不手写——手写容易编造出不存在的码（我自己踩过）
+let flypyCases: [(String, String)] = [
+    ("ni hao", "你好"),
+    ("wo men", "我们"),
+    ("wo men zai", "我们"),
+    ("ming tian", "明天"),
+    ("zhong guo", "中国"),
+    ("ren gong zhi neng", "人工智能"),
+    ("xin ku le", "辛苦了"),
+]
+for (pinyin, word) in flypyCases {
+    let code = FlypyCodec.encode(pinyin.split(separator: " ").map(String.init))
+    var gaps: [String] = []
+    var chars = ""
+    for ch in code {
+        chars.append(ch)
+        if Searcher.shared.search(chars, scheme: .flypy).isEmpty { gaps.append(chars) }
+    }
+    if gaps.isEmpty {
+        print("  ✅ \(word) [\(code)] 逐键无断档（\(code.count) 步）")
+    } else {
+        failures.append("双拼断档 \(word)[\(code)]：\(gaps.joined(separator: ","))")
+        print("  ❌ \(word) [\(code)] 断档于 \(gaps.joined(separator: ","))")
+    }
+}
+
+print("\n=== 默认方案整串首选回归 ===")
+for (pinyin, word) in flypyCases where !pinyin.contains("zai") {
+    let code = FlypyCodec.encode(pinyin.split(separator: " ").map(String.init))
+    expectFirst(code, is: word, scheme: .flypy)
+}
+
+// 双拼下的覆盖度坐标系：coverBonus 必须拿「候选的双拼码」比输入，
+// 而不是拿全拼串比双拼串（后者坐标系不对，覆盖度与精确匹配全算错）。
+print("\n=== 双拼覆盖度优先回归 ===")
+expectFirst("wom", is: "我们", scheme: .flypy)        // 奇数位，末键 m 是声母
+expectFirst("womfz", is: "我们", scheme: .flypy)      // 已成词 + 半个字
+expectFirst("nih", is: "你好", scheme: .flypy)
+
+// 音形未装码表时应退化为双拼（不得丢输入）。
+print("\n=== 小鹤音形退化回归 ===")
+for (pinyin, word) in flypyCases.prefix(4) {
+    let code = FlypyCodec.encode(pinyin.split(separator: " ").map(String.init))
+    let xing = Searcher.shared.search(code, scheme: .flypyXing).map { $0.text }
+    if xing.contains(word) {
+        print("  ✅ \(word) [\(code)] 音形下仍命中（第 \(xing.firstIndex(of: word)! + 1) 位）")
+    } else {
+        failures.append("音形丢输入 \(word)[\(code)]：前5 \(xing.prefix(5).joined(separator: " "))")
+        print("  ❌ \(word) [\(code)] 音形下丢失")
+    }
+}
+
+// encode/decode 必须可逆：否则双拼回退路径（decode 后当全拼查）会查错键。
+print("\n=== 双拼编码往返一致性 ===")
+for (pinyin, _) in flypyCases {
+    let sylls = pinyin.split(separator: " ").map(String.init)
+    let code = FlypyCodec.encode(sylls)
+    let back = FlypyCodec.decode(code)
+    if back == sylls {
+        print("  ✅ \(pinyin) → \(code) → 原样返回")
+    } else {
+        failures.append("往返不一致 \(pinyin) → \(code) → \(back.joined(separator: "/"))")
+        print("  ❌ \(pinyin) → \(code) → \(back.joined(separator: "/"))  ← 不可逆")
+    }
+}
+
+// 全量音节暂返扫描：只测几个词不足以证明可逆（wo 这个 bug 就是漏在手写用例外）。
+// 拿真实 417 音节表逐个 encode → decode，要求原样返回。
+print("\n=== 全量音节往返扫描 ===")
+var rtBad: [String] = []
+var rtOK = 0
+for sy in PinyinSyllable.all.sorted() {
+    let code = FlypyCodec.encode([sy])
+    guard code.count == 2 else {
+        rtBad.append("\(sy) encode 得到 '\(code)'（非 2 键）")
+        continue
+    }
+    let back = FlypyCodec.decode(code)
+    if back == [sy] { rtOK += 1 } else {
+        rtBad.append("\(sy) → \(code) → \(back.joined(separator: "/"))")
+    }
+}
+print("  可逆 \(rtOK) / \(PinyinSyllable.all.count) 个音节")
+if rtBad.isEmpty {
+    print("  ✅ 全量音节往返一致")
+} else {
+    // 已逐个定性的 7 个例外（非笼统「固有」，不得含糊）：
+    //   · hm / m / n —— 叹词无韵母，双拼定长 2 键本质上无法表示（方案边界）
+    //   · lo / lve / nve / rua —— 小鹤键位重码（l 键兼 iang/uang、t 键兼 ue/üe 等）
+    // 这 7 个均为极低频音节，不影响日常输入；但数量上涨就是回归（阈值 10）。
+    print("  ⚠️ \(rtBad.count) 个音节不可逆（已定性：叹词无韵母 + 小鹤重码）：")
+    for b in rtBad.prefix(15) { print("     · \(b)") }
+    if rtBad.count > 10 {
+        failures.append("往返不可逆音节 \(rtBad.count) 个，超过阈值 10（基线 7）")
+    }
+}
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")

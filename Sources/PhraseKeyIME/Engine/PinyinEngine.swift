@@ -286,6 +286,66 @@ final class PinyinEngine {
         return Array(out.prefix(50))
     }
 
+    /// 双拼渐进式查询：消除双拼在「奇数键位」的断档。
+    ///
+    /// 为什么双拼比全拼更需要这个：双拼每字固定 2 键，用户打词时**必然**逐键经过奇数长度。
+    /// 实测（修复前）：默认方案小鹤双拼下 wourfg 6 步有 5 步候选为空、nihc 4 步有 1 步为空，
+    /// 表现为「打词过程中键盘几乎全程只剩字母」。默认方案断档 = 新用户开箱第一印象就是坏的。
+    ///
+    /// 策略（按质量降序）：
+    ///   ① 双拼码前缀匹配：找以整串开头的更长双拼键（nih → nihc「你好」）
+    ///      奇数位时末键是声母，前缀匹配天然能补齐它的韵母，这是双拼最合适的兜底。
+    ///   ② 偶数前缀成词：取前 2⌊n/2⌋ 键（已完整的音节部分）查词（nih → ni「你」）
+    ///   ③ decode 成全拼后走全拼渐进（借用全拼的音节切分能力）
+    ///
+    /// 顺序同全拼的教训：前缀匹配必须在「更短的已成词部分」之前，
+    /// 否则长词会被短词/单字压掉（见 searchProgressive 注释里记录的回退事故）。
+    func searchFlypyProgressive(_ input: String) -> [DictEntry] {
+        let norm = input.lowercased().replacingOccurrences(of: " ", with: "")
+        guard !norm.isEmpty else { return [] }
+        var out: [DictEntry] = []
+        var seen = Set<String>()
+
+        func push(_ list: [DictEntry]) {
+            for e in list where !seen.contains(e.word) {
+                seen.insert(e.word)
+                out.append(e)
+                if out.count >= 60 { return }
+            }
+        }
+
+        // ① 双拼码前缀匹配（主力）
+        var prefixHits: [(String, [Int32])] = []
+        for (k, v) in byFlypy where k.count > norm.count && k.hasPrefix(norm) {
+            prefixHits.append((k, v))
+            if prefixHits.count >= 400 { break }
+        }
+        prefixHits.sort { $0.0.count < $1.0.count }
+        var pidx: [Int32] = []
+        for (_, v) in prefixHits.prefix(40) { pidx.append(contentsOf: v.prefix(2)) }
+        push(resolve(pidx, limit: 30))
+
+        // ② 偶数前缀（已完整音节部分）逐段回退
+        if out.count < 25, norm.count >= 2 {
+            var take = (norm.count / 2) * 2
+            if take == norm.count { take -= 2 }   // 整串已在 searchFlypy 查过，跳过
+            while take >= 2 {
+                let key = String(norm.prefix(take))
+                if let l = byFlypy[key] { push(resolve(l, limit: 15)) }
+                if out.count >= 25 { break }
+                take -= 2
+            }
+        }
+
+        // ③ decode 成全拼后借用全拼渐进
+        if out.isEmpty {
+            let decoded = FlypyCodec.decode(norm).joined()
+            push(searchProgressive(decoded))
+        }
+
+        return Array(out.prefix(50))
+    }
+
     /// 综合查询（不含常用语）：优先全拼精确，其次简拼。
     /// scheme：全拼模式（.pinyin）用全拼/简拼；双拼/音形模式用双拼编码。
     /// 返回结果前面会带上用户词典的条目（学过的词优先）。
@@ -307,7 +367,12 @@ final class PinyinEngine {
             let fp = searchFlypy(input)
             if user.isEmpty && fp.isEmpty {
                 let decoded = FlypyCodec.decode(input).joined()
-                return _userByPinyin[decoded] ?? searchPinyin(decoded)
+                if let u = _userByPinyin[decoded] { return u }
+                let py = searchPinyin(decoded)
+                if !py.isEmpty { return py }
+                // 双拼同样需要渐进式兜底：双拼每字定长 2 键，用户必然经过奇数长度，
+                // 此前无此回退 → 奇数位候选全空（实测 wourfg 6 步 5 空）。
+                return searchFlypyProgressive(input)
             }
             return user + fp
         }

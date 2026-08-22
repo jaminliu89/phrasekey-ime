@@ -36,19 +36,20 @@ final class Searcher {
         return min(Int(log10(Double(freq)) * 151), 999)
     }
 
-    /// 覆盖度 → 主排序信号（候选拼音与输入的公共前缀占输入的比例）。
+    /// 覆盖度 → 主排序信号（候选编码与输入的公共前缀占输入的比例）。
     /// 为何覆盖度才是主信号：用户多敲一个字母就是在缩小意图范围。
     ///   输入 womenz（ 6 字母）时「我」只覆盖 wo（2）、「我们」覆盖 women（5），
     ///   即使「我」词频高 3 倍，用户想打的也显然是「我们」—— 否则他不会接着敲 menz。
     /// 用比例而非绝对长度：避开长输入时加成穿透 baseScore 分档。
-    private func coverBonus(candidatePinyin: String, input: String) -> Int {
+    /// 参数名用 candidateCode 而非 pinyin：提醒调用方必须传与输入同坐标系的编码
+    /// （全拼传全拼串，双拼传双拼码），否则覆盖度毫无意义。
+    private func coverBonus(candidateCode: String, input: String) -> Int {
         guard !input.isEmpty else { return 0 }
-        let flat = candidatePinyin.replacingOccurrences(of: " ", with: "")
         var n = 0
-        var a = flat.startIndex, b = input.startIndex
-        while a < flat.endIndex, b < input.endIndex, flat[a] == input[b] {
+        var a = candidateCode.startIndex, b = input.startIndex
+        while a < candidateCode.endIndex, b < input.endIndex, candidateCode[a] == input[b] {
             n += 1
-            a = flat.index(after: a)
+            a = candidateCode.index(after: a)
             b = input.index(after: b)
         }
         return Int(Double(n) / Double(input.count) * 999)
@@ -76,10 +77,18 @@ final class Searcher {
             }
             // 词库（用户词典 + 内置，用户词典 freq 更高自然靠前）
             for e in PinyinEngine.shared.query(norm, scheme: scheme) {
-                let pinyinExact = e.pinyin.replacingOccurrences(of: " ", with: "") == norm
-                let baseScore = pinyinExact ? 2000 : 1000
+                // 坐标系必须对齐：全拼时输入与 e.pinyin 同为全拼；
+                // 双拼/音形时输入是双拼码，必须先把 e.pinyin 编成双拼再比，
+                // 否则拿双拼串去比全拼串，覆盖度与精确匹配全部算错。
+                let candCode: String
+                if scheme.isFlypy {
+                    candCode = FlypyCodec.encode(e.pinyin.split(separator: " ").map(String.init))
+                } else {
+                    candCode = e.pinyin.replacingOccurrences(of: " ", with: "")
+                }
+                let baseScore = (candCode == norm) ? 2000 : 1000
                 // 主信号 = 覆盖度；freq 已下沉为 sorted 里的 tiebreak。
-                let cover = coverBonus(candidatePinyin: e.pinyin, input: norm)
+                let cover = coverBonus(candidateCode: candCode, input: norm)
                 out.append(Candidate(text: e.word, type: "word", score: baseScore + cover, hotword: nil, pinyin: e.pinyin, freq: e.freq))
             }
             // 音形模式：对词库候选做形码过滤（若装了码表）

@@ -38,12 +38,15 @@ enum FlypyCodec {
     ]
 
     /// 韵母（全拼）→ 键（编码方向，含多音代表）
+    /// 注 "v"：音节表里 ü 写作 v（lü → lv），不补这个键会导致 lv/nv/lve/nve
+    /// encode 得到空串（经全量音节往返扫描抓到）。
     static let finalToKey: [String: String] = [
         "a": "a", "in": "b", "ao": "c", "ai": "d", "e": "e", "en": "f",
         "eng": "g", "ang": "h", "i": "i", "an": "j", "ing": "k",
         "iang": "l", "uang": "l", "ian": "m", "iao": "n", "uo": "o", "o": "o",
         "ie": "p", "iu": "q", "uan": "r", "er": "r", "ong": "s", "iong": "s",
-        "ue": "t", "ve": "t", "u": "u", "ui": "v", "ü": "v", "ei": "w",
+        "ue": "t", "ve": "t", "\u{00fc}e": "t", "u": "u", "ui": "v",
+        "\u{00fc}": "v", "v": "v", "ei": "w",
         "ia": "x", "ua": "x", "un": "y", "ou": "z", "uai": "k"
     ]
 
@@ -71,6 +74,14 @@ enum FlypyCodec {
     // MARK: - Decode (Shuangpin → Pinyin)
 
     /// 解码单个双拼音节（恰好 2 键），失败返回 nil。
+    ///
+    /// 坑（经回归断言抓到）：encode/decode 曾不可逆。
+    ///   wo → encode 得 "wo" → decode 回来却是 "wuo"。
+    ///   因为 w 是合法声母键，走声母分支拼出 w + finalFor(o)=uo → "wuo"，
+    ///   而汉语拼音里 wo 本身就是完整音节，wuo 根本不存在。
+    ///   后果：双拼回退路径（decode 后当全拼查）会拿不存在的键去查字典 → 查不到。
+    /// 修：拼出的结果必须过真实 417 音节表校验；不合法时依次回退到
+    /// 「去掩音介音」形式（wuo→wo、yi_→...）与零声母表。
     static func decodeSyllable(_ two: String) -> String? {
         let s = two.lowercased()
         let chars = Array(s)
@@ -78,16 +89,28 @@ enum FlypyCodec {
         let k1 = chars[0], k2 = chars[1]
 
         if initialKeys.contains(k1) {
-            guard let ini = initialMap[k1] else { return nil }
-            // v 键韵母特殊：ü / ui
-            if k2 == "v" {
-                if uiBecomesU.contains(k1) {
-                    return ini + "ü"
+            if let ini = initialMap[k1] {
+                var cand: String?
+                // v 键韵母特殊：ü / ui
+                if k2 == "v" {
+                    cand = uiBecomesU.contains(k1) ? ini + "ü" : ini + "ui"
+                } else if let fin = finalFor(initial: ini, key: k2) {
+                    cand = ini + fin
                 }
-                return ini + "ui"
+                if let c = cand {
+                    if PinyinSyllable.isSyllable(c) { return c }
+                    // w/y 开头的零声母音节：u/i 作为掩音不单独出现（wuo→wo、yie→ye）
+                    if ini == "w", c.hasPrefix("wu"), c.count > 2 {
+                        let alt = "w" + c.dropFirst(2)
+                        if PinyinSyllable.isSyllable(alt) { return alt }
+                    }
+                    if ini == "y", c.hasPrefix("yi"), c.count > 2 {
+                        let alt = "y" + c.dropFirst(2)
+                        if PinyinSyllable.isSyllable(alt) { return alt }
+                    }
+                }
             }
-            guard let fin = finalFor(initial: ini, key: k2) else { return nil }
-            return ini + fin
+            // 声母分支未能产出合法音节 → 继续试零声母表（如 er）
         }
         // 零声母音节
         return zeroSyllables[s]
