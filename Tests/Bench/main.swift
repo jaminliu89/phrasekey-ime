@@ -124,6 +124,60 @@ for s in illegal {
     }
 }
 
+// ---- 断档回归（能用/不能用的分界线，必须永久断言）----
+// 症状史：query() 曾是纯字典精确匹配，输入到「不完整音节组合」（niha / womenz）
+// 时字典无此键 → 候选为空 → 键盘只剩字母键 → 无法连续输入。
+// 这里逐字母模拟真实敲击，任一中间状态候选为空即视为回归。
+print("\n=== 连续输入断档回归 ===")
+let typingCases = [
+    "nihao",
+    "xianzai",
+    "zhongguoren",
+    "womenzai",
+    "nihaoshijie",          // 长串：11 字母 4 音节
+    "jintianwanshangkaihui", // 超长串：21 字母 7 音节
+    "rengongzhineng",
+    "shengrikuaile",
+]
+for phrase in typingCases {
+    var gaps: [String] = []
+    var trace: [String] = []
+    var chars = ""
+    for ch in phrase {
+        chars.append(ch)
+        let n = Searcher.shared.search(chars, scheme: .pinyin).count
+        trace.append("\(chars):\(n)")
+        if n == 0 { gaps.append(chars) }
+    }
+    if gaps.isEmpty {
+        print("  ✅ \(phrase) 逐字母无断档（\(phrase.count) 步）")
+    } else {
+        failures.append("断档 \(phrase)：\(gaps.joined(separator: ",")) 处候选为空")
+        print("  ❌ \(phrase) 断档于 \(gaps.joined(separator: ","))")
+        print("     轨迹：\(trace.joined(separator: " "))")
+    }
+}
+
+// ---- 常用语持久化回归 ----
+// 症状史：App Group 容器下 PhraseKey/ 子目录不会自动创建，缺目录时 write 失败
+// 而 try? 静默吞错 → 表现为「常用语加不进去」。这里断言写入后能读回。
+print("\n=== 常用语持久化回归 ===")
+do {
+    let store = HotwordsStore.shared
+    let probeKey = "zzprobe\(Int(Date().timeIntervalSince1970))"
+    let before = store.items.count
+    store.add(text: "断档回归探针文本", key: probeKey)
+    store.load()   // 强制从磁盘重读，验证真的落盘了
+    let hit = store.items.first { $0.key == probeKey }
+    if let hit {
+        print("  ✅ 写入并从磁盘读回成功（\(before) → \(store.items.count) 条）")
+        store.remove(id: hit.hw_id)   // 清理探针，不污染真实数据
+    } else {
+        failures.append("常用语写入后无法读回（key=\(probeKey)）")
+        print("  ❌ 写入后从磁盘读不回来 —— 落盘失败")
+    }
+}
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")
