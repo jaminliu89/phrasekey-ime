@@ -21,13 +21,15 @@
 
 ### Phase 0 — 文档与口径对齐（当前）
 - [x] 补齐启动门禁四份文档 —— 验收标准：`inception-check.sh` 退出码 0
-- [ ] 修 README 3 处名不副实 —— 验收标准：02-prd.md 一致性表全 ✅
-  - [ ] Features 表的 Xingma 加注「需自备码表」或移出
-  - [ ] Roadmap 的 `[x] v0.2 Xingma` 改为未完成
-  - [ ] 「Save from clipboard」改为实际语义（面板→上屏）
-  - [ ] 删除 Windows/Linux (planned) 与剪贴板历史
-- [ ] 修 `HotwordsStore.search` 默认 scheme（`.pinyin` → 产品默认）
-      —— 验收标准：与 iOS 同源问题一并消除，bench 加断言防回归
+- [x] 修 README 3 处名不副实 —— 验收标准：02-prd.md 一致性表全 ✅
+  - [x] Features 表 Xingma 改为「needs your own code table」
+  - [x] Roadmap 的 v0.2 去掉 Xingma；新增「Xingma shape filtering 未测」条目
+  - [x] 「Save from clipboard」→「Quick insert from panel」（改为实际语义）
+  - [x] 删除 Windows/Linux (TSF/ibus) 与架构图中的 planned 行
+  - [x] 新增「Explicitly out of scope」段，明示不做清单
+- [x] 修默认 scheme 写死 —— **实际有 3 处而非 1 处**：
+      `HotwordsStore.search` / `Searcher.search` / `PinyinEngine.query` 全部 `.pinyin` → `.default`
+      —— 已加行为断言：省略 scheme 必须等价于显式传 `InputScheme.default`
 
 ### Phase 1 — macOS 7 天试用（核心验收）
 - [ ] 安装最新构建，设为默认输入法
@@ -153,3 +155,28 @@
 **自身失误记录**：首次派 3 个 scout 并行全网调研，单个 timeout 900s
 **全部超时、产出全丢**；改为自己直查 GitHub API + EULA 原文，5 分钟见效。
 教训已固化进 skill（先直查一击定生死项，再考虑外包）。
+
+### 2026-08-23 Phase 0 完成
+
+**README 口径已对齐**（4 处改动）：音形明写「不内置 + 法律原因 + 未装则退化」；
+Save-from-clipboard 改为实际语义 Quick insert from panel；删 Windows/Linux；
+新增 Explicitly out of scope 段。
+
+**默认 scheme 写死问题：实际有 3 处，不是 1 处**（已验证）。
+`HotwordsStore.search:157` / `Searcher.search:59` / `PinyinEngine.query:352`
+全部 `scheme: InputScheme = .pinyin` → `.default`。
+
+结论（**已验证**）：同源 bug 往往不止一处。修完一个必须 grep 同类模式扫全仓库。
+上一轮只发现 iOS 硬编码那一处就以为修完了，实际引擎层三个入口全有。
+
+**顺带发现（未修，风险已知）**：测试工具函数 `expect` / `expectFirst` 自身的默认参数
+仍是 `.pinyin`。因现有调用点都显式传 scheme，暂不影响；但若新增测试忘传，
+会静默按全拼断言 —— 属同类隐患，记录在此备查。
+
+**新增回归**：`=== 默认参数跟随产品默认方案 ===`
+断言 `query(code)` 省略 scheme 必须等价于显式传 `InputScheme.default`，
+并加反向保险（双拼码若无候选 → 说明默认退回了全拼）。
+
+**验证**：`bench_engine.sh` 全绿；`swift build` 通过；iOS `BUILD SUCCEEDED`。
+
+**下一步**：Phase 1 —— 你安装后连续 7 天试用，每天记录「不得不切回系统输入法」的次数与原因。

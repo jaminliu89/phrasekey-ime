@@ -311,6 +311,27 @@ if rtBad.isEmpty {
     }
 }
 
+// ── 默认参数不得写死方案 ──────────────────────────────────────────────
+// 坑（已定性两次）：search/query 的 scheme 默认参数曾写死 .pinyin，
+//   调用方漏传就静默按全拼查 —— 不报错，只是候选不对，极难定位。
+//   iOS 键盘硬编码 .pinyin 是同一根因。这里用行为断言锁住。
+print("\n=== 默认参数跟随产品默认方案 ===")
+for code in ["nihc", "womf", "vsgo"] {
+    let implicit = PinyinEngine.shared.query(code)
+    let explicit = PinyinEngine.shared.query(code, scheme: InputScheme.default)
+    let same = implicit.count == explicit.count
+        && zip(implicit, explicit).allSatisfy { $0.word == $1.word }
+    if !same {
+        failures.append("query(\"\(code)\") 省略 scheme 与显式传 InputScheme.default 不等价"
+            + "（隐式 \(implicit.count) 条 / 显式 \(explicit.count) 条）")
+    }
+    // 反向保险：默认若退回全拼，双拼码查不到 → implicit 为空
+    if implicit.isEmpty {
+        failures.append("默认方案下双拼码 \(code) 无候选 —— 默认可能退回了全拼")
+    }
+    print("  \(code) → 隐式 \(implicit.count) 条 / 显式 \(explicit.count) 条 \(same ? "✓" : "✗")")
+}
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")

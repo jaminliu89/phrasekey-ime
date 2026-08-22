@@ -349,7 +349,10 @@ final class PinyinEngine {
     /// 综合查询（不含常用语）：优先全拼精确，其次简拼。
     /// scheme：全拼模式（.pinyin）用全拼/简拼；双拼/音形模式用双拼编码。
     /// 返回结果前面会带上用户词典的条目（学过的词优先）。
-    func query(_ input: String, scheme: InputScheme = .pinyin) -> [DictEntry] {
+    // 默认参数必须跟随产品默认方案（InputScheme.default），不许写死 .pinyin。
+    // 坑（已定性）：写死 .pinyin 时，调用方漏传 scheme 就静默按全拼查 —— 不报错、
+    //   结果只是「候选不对」，极难定位。iOS 键盘硬编码 .pinyin 与此同源（见 7c49895）。
+    func query(_ input: String, scheme: InputScheme = .default) -> [DictEntry] {
         switch scheme {
         case .pinyin:
             let user = _userByPinyin[input.lowercased()] ?? []

@@ -56,7 +56,10 @@ final class Searcher {
     }
 
     /// Combined search. scheme: pinyin / xiaohe shuangpin / xiaohe xingma.
-    func search(_ input: String, scheme: InputScheme = .pinyin) -> [Candidate] {
+    // 默认参数必须跟随产品默认方案（InputScheme.default），不许写死 .pinyin。
+    // 坑（已定性）：写死 .pinyin 时，调用方漏传 scheme 就静默按全拼查 —— 不报错、
+    //   结果只是「候选不对」，极难定位。iOS 键盘硬编码 .pinyin 与此同源（见 7c49895）。
+    func search(_ input: String, scheme: InputScheme = .default) -> [Candidate] {
         let norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !norm.isEmpty else { return [] }
         var out: [Candidate] = []

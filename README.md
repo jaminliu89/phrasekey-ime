@@ -21,13 +21,13 @@ It frees your phrases, dictionaries, and typing habits from proprietary lock-in 
 
 | Capability | Description |
 |---|---|
-| **Input schemes** | Pinyin / **Xiaohe Shuangpin** / **Xiaohe Xingma** (switchable from menu) |
+| **Input schemes** | Pinyin / **Xiaohe Shuangpin** (default) / Xingma (needs your own code table — see below) |
 | **Phrases first** | Key matches (your shortcut → long text) always top the candidate list |
 | **Phrase Manager** | Browse, search, add, edit, delete phrases — full manager panel on both macOS and iOS |
-| **Save from clipboard** | One-click: copy any text → save as a phrase (auto-generated key from pinyin initials) |
+| **Quick insert from panel** | Pick a phrase in the manager → it's typed straight into the frontmost app |
 | **Import phrases** | Import from other IMEs' CSV/JSON exports (format compatible) |
 | **Auto-learn** | Words you pick get promoted — the more you type, the smarter it gets |
-| **Cross-platform data** | Open formats → same data on macOS, iOS, Windows, Linux |
+| **Open data formats** | TSV/JSON — diff-able, git-able, scriptable; the data dir is yours |
 | **Privacy-first** | Data directory is yours: local, cloud, or git — you choose |
 | **Gboard-inspired UI** | Clean candidate bar with Google-style blue accent and dark mode |
 | **Pinyin engine** | Self-contained, cross-platform (11072-character pinyin table, no Apple CFString dependency) |
@@ -37,7 +37,6 @@ It frees your phrases, dictionaries, and typing habits from proprietary lock-in 
 ```
 ┌─ Input Shell (thin, per-platform) ────────────────┐
 │  macOS: InputMethodKit    iOS: Keyboard Extension  │
-│  Windows: TSF (planned)   Linux: ibus (planned)     │
 └──────────────────┬─────────────────────────────────┘
 ┌─ Core Engine (platform-agnostic, reusable) ───────┐
 │  Pinyin/Shuangpin/Xingma · Dictionary · Phrases    │
@@ -84,7 +83,11 @@ xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' C
 
 - **Xiaohe Shuangpin**: Built-in complete key table (zero-initials, ü/ui context, iang/uang, iong/ong, ua/uo/uai context). Bidirectional encode/decode.  
   Examples: `nihc` = 你好, `iyjp` = 春节, `jv` = 居.
-- **Xiaohe Xingma**: Shuangpin + shape code. Place a full Xingma code table at `~/Library/Application Support/PhraseKey/xingma.tsv` (format: `char\tcode`). Falls back to pure Shuangpin when no table is installed.
+- **Xiaohe Xingma** — **not bundled, by design.** The official Xiaohe Xingma code table is closed-source;
+  its EULA forbids reverse engineering and reserves all copyright to flypy.com, so it cannot legally ship
+  inside an MIT project. Supply your own table at `~/Library/Application Support/PhraseKey/xingma.tsv`
+  (format: `char\tcode`). **Without a table, Xingma silently degrades to plain Shuangpin** — nothing is
+  lost, but no shape filtering happens either.
 - **Phrase keys** (your custom shortcuts) always win — they're your personal shape codes.
 
 ## Open Data Formats (Key to Cross-Device Sync)
@@ -97,14 +100,16 @@ xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' C
 ## Roadmap
 
 - [x] v0.1: IMK skeleton + engine + phrases + Gboard UI
-- [x] v0.2: Xiaohe Shuangpin/Xingma + cross-platform data layer + iOS keyboard extension (App Group shared data)
+- [x] v0.2: Xiaohe Shuangpin + cross-platform data layer + iOS keyboard extension (App Group shared data)
 - [x] User dictionary learning (auto-learn committed words) — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
 - [x] Phrase Manager panel (macOS menu bar + iOS host app, both with add/edit/delete/search)
-- [x] Save-from-clipboard one-liner + auto key generation
-- [ ] Clipboard history (cross-device)
+- [x] Quick insert from the phrase panel into the frontmost app
+- [ ] Xingma shape filtering — code path exists but is **untested** (needs a user-supplied table)
 - [x] Full dictionary / Xingma code table import docs — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
 - [x] iOS hardware signing guide (free Apple ID supported — see [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md))
-- [ ] Windows/Linux (TSF/ibus — port core engine)
+
+**Explicitly out of scope** (this is a personal tool — see `.pi/plans/01-positioning.md`):
+Windows/Linux ports · clipboard history · cloud sync · bundled Xingma table · plugin/theme system
 
 ## Repository
 
