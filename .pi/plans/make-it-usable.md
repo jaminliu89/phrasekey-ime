@@ -51,3 +51,45 @@
 ## 进度日志
 
 - 2026-08-23 计划落盘，开始 Phase 1
+
+---
+
+## 2026-08-23 真机排障 + 引擎实测记录
+
+### 已证伪的猜想（每条都有对照证据）
+| 猜想 | 证伪方式 | 结论 |
+|---|---|---|
+| 扩展崩溃 | 438 份崩溃报告全量 grep，无 PhraseKeyKeyboard | 证伪 |
+| 内存被 Jetsam 杀 | 7 份 JetsamEvent 快照，扩展进程从未出现 | 证伪 |
+| entitlements/profile 不匹配 | codesign -d 与 embedded.mobileprovision 逐项比对一致，有效期至 8/28 | 证伪 |
+| Debug Dylib 坑 | nm -gU 确认主类符号在主可执行内，无 *debug.dylib | 已修复 |
+| App Group 被拒 | 设备端容器存在且被写入（8/22 05:30） | 证伪 |
+| 「从未被拉起」 | 用户实测：键盘在列表里，偶尔能弹但活不久 | 证伪（改为"能启动但被终止"） |
+
+### 症状精确描述（用户口述）
+设置→键盘 里 **有** PhraseKey；切换时**偶尔能弹出**；**存活时间很短**，之后不再弹出。
+→ 不是注册失败，不是崩溃，是**加载成功后被系统终止**或**加载超时被放弃**。
+
+### 未排除变量
+- 设备为 **iOS 27.0 Beta (24A5408d)** —— 第三方键盘在 Beta 上有历史性问题，最大嫌疑
+- 免费 Personal Team profile 7 天有效期与扩展存活的关系
+- UIInputViewController 首次布局超时预算（尚无实测数字）
+
+### 引擎实测数据（Scripts/bench_engine.sh，20 万词条）
+- 加载 + 索引：1443 ms
+- 内存：+93 MB（优化前 110 MB）
+- 查询：0.032 ms
+- 内存分布：读文件 +9 / 切行 +14.5 / struct +9 / **单份索引 +16.8（×3 份）**
+- **结论：Dictionary String 键是瓶颈。iOS 键盘扩展需二进制词库 + mmap，Swift 原生容器方案不可行。**
+- 注：iOS 端当前打包的仍是旧 108 条词库，故内存不是本次"活不久"的原因。
+
+### 已修复（Phase 3 完成）
+- PinyinSyllable.all：23×34 笛卡尔积（782 项，含 fai/ruang 等非法音节）→ 真实 417 音节表
+- segment() 匹配窗口 3 → 6：修复 xianzai→xia/n/zai、zhongguoren→zho/n/g/guo/ren 等 4 项切分错误
+- 回归 10 项失败 → 全绿
+
+### 待验证清单（遵循调试铁律，不许无对照结论）
+- [ ] 用 Xcode 官方 Custom Keyboard 空模板在同机对照 —— 若空模板也活不久，则确定为系统/签名层问题，与我们代码无关
+- [ ] 不锁屏连续切换键盘 10 次，记录第几次开始失效
+- [ ] 抓取键盘切换瞬间日志（Scripts/capture_keyboard_log.sh），找 pkd/PlugInKit 的 reason code
+- [ ] 查证 iOS 26/27 是否有第三方键盘已知 bug（调研中）

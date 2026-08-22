@@ -26,8 +26,11 @@ targets:
       - path: ../Sources/PhraseKeyIME/Hotwords
       - path: ../Sources/PhraseKeyIME/Settings/InputScheme.swift
       - path: ../Sources/PhraseKeyIME/Settings/PhraseKeySettings.swift
-      # 引擎资源（词库 + 汉字拼音表）
-      - path: ../Sources/PhraseKeyIME/Resources/dict.tsv
+      # 引擎资源：键盘扩展用移动版精简词库（3 万条）。
+      # 实测（Scripts/bench_engine.sh + /tmp/mt2）：20 万条净增 93MB，6 万条 20MB，3 万条 10.6MB。
+      # iOS 键盘扩展内存预算约 30-60MB，全量词库必被系统终止，故必须用 dict_mobile。
+      # 打包时重命名为 dict.tsv，引擎按固定名加载，无需分平台改代码。
+      - path: ../Sources/PhraseKeyIME/Resources/dict_mobile.tsv
         buildPhase: resources
       - path: ../Sources/PhraseKeyIME/Resources/hanzi_pinyin.tsv
         buildPhase: resources
@@ -39,9 +42,10 @@ targets:
         CFBundleVersion: "1"
         NSExtension:
           NSExtensionAttributes:
-            # 必须放在 NSExtensionAttributes 下，系统才会显示「允许完全访问」开关；
-            # 键名必须是 RequestsOpenAccess（复数 Requests，少 s 系统不识别 = 开关不出现）
-            RequestsOpenAccess: true
+            # RequestsOpenAccess=false：本键盘不联网、不读剪贴板、词库随包内置，
+            # 无需「允许完全访问」。开启它会引入额外沙盒/隐私审计限制，
+            # 且未获授权时键盘处于半残状态，是存活风险来源。对照组 BareKB 用 false 可长期存活。
+            RequestsOpenAccess: false
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
     settings:

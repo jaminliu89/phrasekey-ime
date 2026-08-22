@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		08C4BF84DC6C10DB5F7F9163 /* HotwordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40A2B785186144F767B6BC2 /* HotwordsStore.swift */; };
 		09D4E14FD4457D1709AA3B15 /* hanzi_pinyin.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */; };
+		0AD883660199E8ACF8D4DE88 /* dict_mobile.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CE2120AF2EC2E8CFB9EEC4C3 /* dict_mobile.tsv */; };
 		1581950ED7CF26CA0E8BAE04 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */; };
 		1B5524B9B2C81D74DC6730AF /* PhraseKeySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */; };
 		1BCBB2EFA36460E2D9D741B9 /* Searcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA70CC7277051F72C24D1BA9 /* Searcher.swift */; };
@@ -24,7 +25,6 @@
 		92701B24453B64B28D11FCC1 /* hanzi_pinyin.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */; };
 		A23AD177A72C7EA449337586 /* InputScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6CACE635DDFA07B977E85C8 /* InputScheme.swift */; };
 		A92EA3570E132D69A495DDEC /* InputScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6CACE635DDFA07B977E85C8 /* InputScheme.swift */; };
-		AC9558AFD9B55B470F5232DF /* dict.tsv in Resources */ = {isa = PBXBuildFile; fileRef = FBCBA1218B7F091DAC1DC45B /* dict.tsv */; };
 		AD26370032CD15EDA40DF47E /* Searcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA70CC7277051F72C24D1BA9 /* Searcher.swift */; };
 		B02481527259190EB7535B21 /* PinyinEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AF6A0320C0E7D55B531252 /* PinyinEngine.swift */; };
 		B5E3BCF713A9DBFACA23B790 /* HotwordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40A2B785186144F767B6BC2 /* HotwordsStore.swift */; };
@@ -84,6 +84,7 @@
 		B9754D9C352068BE1EC8F8D9 /* PhraseKeyKeyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhraseKeyKeyboard.entitlements; sourceTree = "<group>"; };
 		C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlypyCodec.swift; sourceTree = "<group>"; };
 		CA70CC7277051F72C24D1BA9 /* Searcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Searcher.swift; sourceTree = "<group>"; };
+		CE2120AF2EC2E8CFB9EEC4C3 /* dict_mobile.tsv */ = {isa = PBXFileReference; path = dict_mobile.tsv; sourceTree = "<group>"; };
 		CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */ = {isa = PBXFileReference; path = hanzi_pinyin.tsv; sourceTree = "<group>"; };
 		D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PhraseKeyKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E59746F0D51D25090AE107C5 /* PhraseKeyKeyboardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PhraseKeyKeyboardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -202,6 +203,7 @@
 		C7851FF5C39C96DBACD7DAF6 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				CE2120AF2EC2E8CFB9EEC4C3 /* dict_mobile.tsv */,
 				FBCBA1218B7F091DAC1DC45B /* dict.tsv */,
 				CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */,
 			);
@@ -336,7 +338,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AC9558AFD9B55B470F5232DF /* dict.tsv in Resources */,
+				0AD883660199E8ACF8D4DE88 /* dict_mobile.tsv in Resources */,
 				09D4E14FD4457D1709AA3B15 /* hanzi_pinyin.tsv in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

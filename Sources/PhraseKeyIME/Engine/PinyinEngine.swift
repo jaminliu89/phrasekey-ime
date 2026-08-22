@@ -31,18 +31,23 @@ final class PinyinEngine {
 
     // MARK: - Dictionary Loading
 
-    /// Built-in dict (Resources/dict.tsv): format `pinyin\tword\tfrequency`
+    /// Built-in dict: format `pinyin\tword\tfrequency`
+    /// 资源名优先级：dict_mobile（iOS 键盘扩展的 3 万条精简版）→ dict（桌面 20 万条）。
+    /// 键盘扩展内存预算约 30-60MB，存在 dict_mobile 时必须优先用它。
     private func loadBuiltinDict() {
-        guard let url = Bundle.main.url(forResource: "dict", withExtension: "tsv"),
-              let content = try? String(contentsOf: url, encoding: .utf8) else {
-            // 调试/命令行环境下 bundle 拿不到资源时，尝试工作目录旁路
-            let alt = FileManager.default.currentDirectoryPath + "/Sources/PhraseKeyIME/Resources/dict.tsv"
-            if let c = try? String(contentsOfFile: alt, encoding: .utf8) {
-                parseDict(c)
+        let candidates = ["dict_mobile", "dict"]
+        for name in candidates {
+            if let url = Bundle.main.url(forResource: name, withExtension: "tsv"),
+               let content = try? String(contentsOf: url, encoding: .utf8) {
+                parseDict(content)
+                return
             }
-            return
         }
-        parseDict(content)
+        // 调试/命令行环境下 bundle 拿不到资源时，尝试工作目录旁路
+        let alt = FileManager.default.currentDirectoryPath + "/Sources/PhraseKeyIME/Resources/dict.tsv"
+        if let c = try? String(contentsOfFile: alt, encoding: .utf8) {
+            parseDict(c)
+        }
     }
 
     /// External user dict (optional): <dataDir>/user_dict.tsv

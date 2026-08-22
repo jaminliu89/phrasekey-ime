@@ -2,8 +2,11 @@ import UIKit
 
 /// iOS 键盘扩展主控制器。
 ///
-/// 注意：免费 Apple ID 签名的开发版本，锁屏后扩展会被系统收回（签名验证问题），
-/// 这是 iOS 免费开发者账号的固有特性，不是 bug。付费开发者账号无此问题。
+/// 存活铁律（经对照实验验证：空壳键盘 BareKB 可长期存活，本键盘原先“活不久”）：
+/// **viewDidLoad 必须同步建完整个可交互 UI**。若把建 UI 延后到引擎异步加载完成，
+/// 系统首次展示键盘时只能拿到一个空白、无响应的 inputView，会被判定为加载失败，
+/// 累计多次后系统会惩罚性停止加载该键盘（表现：偶尔能弹、弹出也活不久）。
+/// 因此：UI 同步建（不依赖引擎），词库引擎异步补，引擎未就绪时按键仍可直接上屏字母。
 final class KeyboardViewController: UIInputViewController {
 
     private var engine: MobileEngine?
@@ -35,13 +38,16 @@ final class KeyboardViewController: UIInputViewController {
             keyArea.trailingAnchor.constraint(equalTo: kbView.trailingAnchor),
         ])
 
-        // 后台加载引擎，避免启动时卡主线程被 watchdog 杀
+        // ① 同步建完 UI（rebuildKeys 不依赖 engine）——不可延后，详见类注释的存活铁律。
+        buildContent()
+
+        // ② 引擎（词库）异步加载，不阻塞首帧；就绪后仅刷新候选区。
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let eng = MobileEngine(scheme: .pinyin)
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.engine = eng
-                self.buildContent()
+                self.renderCandidates()
             }
         }
     }
@@ -210,8 +216,24 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: - 按键
 
     @objc private func keyPressed(_ sender: UIButton) {
-        guard let engine else { return }
         guard let title = sender.title(for: .normal) else { return }
+
+        // 引擎尚未就绪（词库异步加载中）：不能默不作声，否则键盘看上去像死了。
+        // 降级为直接上屏字符，保证任何时刻按键都有反馈。
+        guard let engine else {
+            switch title {
+            case "⌫": textDocumentProxy.deleteBackward()
+            case "123", "ABC":
+                isNumberPad.toggle()
+                rebuildKeys()
+                layoutFrames()
+            case ".#+=": break
+            default:
+                if title.count == 1 { textDocumentProxy.insertText(title) }
+            }
+            return
+        }
+
         switch title {
         case "⌫":
             if engine.composing.isEmpty {
