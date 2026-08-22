@@ -59,7 +59,14 @@ final class KeyboardViewController: UIInputViewController {
 
         // 词库异步加载：不阻塞首帧。就绪前按键降级为直接上屏字符。
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let eng = MobileEngine(scheme: .pinyin)
+            // 方案必须读用户配置，不能硬编码。
+            // 坑（已定性）：此处原为 MobileEngine(scheme: .pinyin) 硬编码，而
+            //   ① 产品默认方案是 .flypy（InputScheme.default）—— 两端默认不一致；
+            //   ② 用户在键盘上切了方案也不持久化，重启键盘就回到全拼。
+            // 根因：宿主 App 把数据目录指向了 App Group，键盘扩展没指 →
+            //   扩展读的是自己沙盒里的空目录，拿不到 config.json。
+            let scheme = KeyboardViewController.loadScheme()
+            let eng = MobileEngine(scheme: scheme)
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.engine = eng
@@ -67,6 +74,16 @@ final class KeyboardViewController: UIInputViewController {
                 self.renderCandidates()
             }
         }
+    }
+
+    /// 从 App Group 共享配置读输入方案（与 macOS 同一份 config.json 格式）。
+    /// 读不到时回退到产品默认方案，而不是写死的 .pinyin。
+    private static func loadScheme() -> InputScheme {
+        if let shared = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: HotwordsStore.appGroupID) {
+            PhraseKeySettings.overrideDefaultDir = shared.appendingPathComponent("PhraseKey")
+        }
+        return PhraseKeySettings.load().scheme
     }
 
     // MARK: - UI 构建（全约束，无 frame 计算）
@@ -355,6 +372,11 @@ final class KeyboardViewController: UIInputViewController {
         self.engine = MobileEngine(scheme: next)
         schemeButton?.setTitle(schemeShort(), for: .normal)
         renderCandidates()
+        // 持久化：否则键盘下次拉起又回到默认方案，用户每次都要重新切。
+        // 写到 App Group 共享配置，宿主 App 与键盘共用同一份。
+        var s = PhraseKeySettings.load()
+        s.scheme = next
+        s.save()
     }
 
     private func schemeShort() -> String {
