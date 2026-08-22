@@ -183,6 +183,11 @@ final class PinyinEngine {
         for k in byFlypy.keys { byFlypy[k]?.sort { $0.freq > $1.freq } }
     }
 
+    // MARK: - Diagnostics
+
+    /// 已加载词条数（内置 + 外部 + 自学习）。基准/诊断用。
+    var entryCount: Int { entries.count + userEntries.count }
+
     // MARK: - Query
 
     struct Result {
