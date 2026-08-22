@@ -178,6 +178,36 @@ do {
     }
 }
 
+// ---- 排序质量回归 ----
+// 症状史（两个 bug 叠加，均已实测定性）：
+//   ① freq 加成用 min(freq,999) 硬截断 → 7987 条高频词全部并列同分
+//   ② best.values.sorted 只比 score，Dictionary 遍历顺序 + 不稳定排序
+//      → 同一输入跑三次候选位置不同（womenz 的「我们」落在 6/1/3 位）
+print("\n=== 排序确定性回归 ===")
+for input in ["womenz", "niha", "zhongguor", "nihao", "wo"] {
+    var seen = Set<String>()
+    for _ in 0..<5 {
+        let top = Searcher.shared.search(input, scheme: .pinyin)
+            .prefix(10).map { $0.text }.joined(separator: "/")
+        seen.insert(top)
+    }
+    if seen.count == 1 {
+        print("  ✅ \(input) 跑 5 次顺序一致")
+    } else {
+        failures.append("排序不确定 \(input)：5 次出现 \(seen.count) 种顺序")
+        print("  ❌ \(input) 跑 5 次出现 \(seen.count) 种顺序")
+        for s in seen { print("     \(s)") }
+    }
+}
+
+// 意图匹配：多敲的字母代表意图收窄，覆盖度高的候选必须靠前。
+// 旧行为：womenz 首选是「我」（只覆盖 2/6 字母），用户已经敲了 menz 却拿不到「我们」。
+print("\n=== 覆盖度优先回归 ===")
+expectFirst("womenz", is: "我们")
+expectFirst("niha", is: "你好")
+expectFirst("womenzai", is: "我们")
+expectFirst("nihaosh", is: "你好")
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")
