@@ -14,9 +14,9 @@ final class PinyinEngine {
 
     private var entries: [DictEntry] = []
     private var userEntries: [DictEntry] = []  // 用户词典（自学习 + 手动添加）
-    private var byInitials: [String: [DictEntry]] = [:]     // 简拼索引
-    private var byPinyin: [String: [DictEntry]] = [:]       // 全拼索引（去掉空格）
-    private var byFlypy: [String: [DictEntry]] = [:]        // 小鹤双拼索引
+    private var byInitials: [String: [Int32]] = [:]     // 简拼索引（存 entries 下标）
+    private var byPinyin: [String: [Int32]] = [:]       // 全拼索引（去掉空格，存下标）
+    private var byFlypy: [String: [Int32]] = [:]        // 小鹤双拼索引（存下标）
 
     private let userDictQueue = DispatchQueue(label: "com.phrasekey.userdict")
     private var userDictDirty = false
@@ -166,21 +166,33 @@ final class PinyinEngine {
         }
     }
 
+    /// 索引只存 entries 的下标（Int32），不存 DictEntry 副本。
+    /// 原实现三份索引各持一份结构体副本，20 万词条会膨胀到 ~110MB，
+    /// 远超 iOS 键盘扩展的内存预算；改存下标后三份索引只占 4 字节/条。
     private func buildIndex() {
-        for e in entries {
-            byPinyin[e.pinyin.replacingOccurrences(of: " ", with: ""), default: []].append(e)
-            byInitials[e.initials, default: []].append(e)
+        for (i, e) in entries.enumerated() {
+            let idx = Int32(i)
+            byPinyin[e.pinyin.replacingOccurrences(of: " ", with: ""), default: []].append(idx)
+            byInitials[e.initials, default: []].append(idx)
             // 小鹤双拼编码：全拼音节 → 双拼串
             let syls = e.pinyin.split(separator: " ").map(String.init)
             let flypy = FlypyCodec.encode(syls)
             if !flypy.isEmpty {
-                byFlypy[flypy, default: []].append(e)
+                byFlypy[flypy, default: []].append(idx)
             }
         }
-        // 排序：词频高优先
-        for k in byPinyin.keys { byPinyin[k]?.sort { $0.freq > $1.freq } }
-        for k in byInitials.keys { byInitials[k]?.sort { $0.freq > $1.freq } }
-        for k in byFlypy.keys { byFlypy[k]?.sort { $0.freq > $1.freq } }
+        // 排序：词频高优先（比较时回表取 freq）
+        let byFreq: (Int32, Int32) -> Bool = { [entries] a, b in
+            entries[Int(a)].freq > entries[Int(b)].freq
+        }
+        for k in byPinyin.keys { byPinyin[k]?.sort(by: byFreq) }
+        for k in byInitials.keys { byInitials[k]?.sort(by: byFreq) }
+        for k in byFlypy.keys { byFlypy[k]?.sort(by: byFreq) }
+    }
+
+    /// 下标列表 → 词条列表（取前 limit 条）
+    private func resolve(_ idxs: [Int32], limit: Int = 50) -> [DictEntry] {
+        idxs.prefix(limit).map { entries[Int($0)] }
     }
 
     // MARK: - Diagnostics
@@ -200,21 +212,21 @@ final class PinyinEngine {
     func searchPinyin(_ input: String) -> [DictEntry] {
         let norm = input.lowercased().replacingOccurrences(of: " ", with: "")
         guard let list = byPinyin[norm] else { return [] }
-        return Array(list.prefix(50))
+        return resolve(list)
     }
 
     /// 简拼查询：输入首字母串 → 词（多音字简拼命中后按词频排）
     func searchInitials(_ input: String) -> [DictEntry] {
         let norm = input.lowercased()
         guard let list = byInitials[norm] else { return [] }
-        return Array(list.prefix(50))
+        return resolve(list)
     }
 
     /// 小鹤双拼查询：输入双拼串 → 词（由词库条目的双拼编码精确匹配）
     func searchFlypy(_ input: String) -> [DictEntry] {
         let norm = input.lowercased()
         guard let list = byFlypy[norm] else { return [] }
-        return Array(list.prefix(50))
+        return resolve(list)
     }
 
     /// 综合查询（不含常用语）：优先全拼精确，其次简拼。
