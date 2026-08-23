@@ -79,7 +79,15 @@ final class PhraseKeyController: IMKInputController {
         }
 
         switch chars {
-        case " ":                 // 空格：上屏首选
+        case " ":                 // 空格：首选上屏 / 常用语精确匹配自动展开
+            // 常用语自动展开：打了简码 + 空格 → 直接上屏全文
+            // 只有精确匹配（key 完全相等）才触发，前缀匹配不展开，防误触
+            if AppSettings.current.autoExpandHotwords,
+               let hw = Searcher.shared.findExactHotword(composing, scheme: AppSettings.current.scheme) {
+                textInput.insertText(hw.text, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+                reset()
+                return true
+            }
             commitSelected(textInput)
             return true
         case "\u{7F}":            // 退格

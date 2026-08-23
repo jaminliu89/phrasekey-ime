@@ -169,4 +169,19 @@ final class Searcher {
         }
         return cands
     }
+
+    /// 精确匹配常用语（key 完全相等）。用于空格自动展开。
+    /// 只有精确匹配才自动展开；前缀匹配不展开，避免误触。
+    func findExactHotword(_ input: String, scheme: InputScheme = .default) -> Hotword? {
+        let norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !norm.isEmpty else { return nil }
+        let results = HotwordsStore.shared.search(norm, scheme: scheme)
+        // 只取 .key 类型的精确匹配（第一条就是最高分）
+        for (type, hw) in results {
+            if type == .key && hw.key.lowercased() == norm {
+                return hw
+            }
+        }
+        return nil
+    }
 }

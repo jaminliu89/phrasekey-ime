@@ -10,6 +10,8 @@ struct PhraseKeySettings: Codable {
     var dataDir: String = ""
     /// 是否启用剪贴板历史（规划中，字段预留）
     var clipboardHistory: Bool = false
+    /// 空格自动展开常用语（精确匹配时直接上屏全文，默认开）
+    var autoExpandHotwords: Bool = true
 
     // MARK: - 目录
 
