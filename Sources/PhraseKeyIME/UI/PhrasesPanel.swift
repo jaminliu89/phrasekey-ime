@@ -10,6 +10,15 @@ final class PhrasesPanelController: NSWindowController, NSTableViewDataSource, N
     private let searchField = NSSearchField()
     private var filtered: [Hotword] = []
 
+    /// 显示过滤：全部 / 短常用语 / 长文本
+    /// 长文本不参与打字候选，只在面板里手动浏览和插入。
+    private enum Filter: Int {
+        case all = 0
+        case short = 1
+        case long = 2
+    }
+    private var filter: Filter = .all
+
     convenience init() {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 520),
@@ -26,11 +35,21 @@ final class PhrasesPanelController: NSWindowController, NSTableViewDataSource, N
         guard let content = window?.contentView else { return }
 
         // 搜索框
-        searchField.frame = NSRect(x: 16, y: 480, width: 448, height: 28)
+        searchField.frame = NSRect(x: 16, y: 480, width: 300, height: 28)
         searchField.placeholderString = "搜索常用语..."
         searchField.target = self
         searchField.action = #selector(searchChanged)
         content.addSubview(searchField)
+
+        // 类型切换：全部 / 短常用语 / 长文本
+        let seg = NSSegmentedControl(labels: ["全部", "短语", "长文本"],
+                                     trackingMode: .selectOne,
+                                     target: self,
+                                     action: #selector(filterChanged(_:)))
+        seg.frame = NSRect(x: 326, y: 480, width: 140, height: 28)
+        seg.selectedSegment = filter.rawValue
+        seg.tag = 201
+        content.addSubview(seg)
 
         // 提示
         let tip = NSTextField(labelWithString: "双击或按回车插入到当前输入框")
@@ -82,10 +101,17 @@ final class PhrasesPanelController: NSWindowController, NSTableViewDataSource, N
 
     private func reloadData() {
         let q = searchField.stringValue.lowercased().trimmingCharacters(in: .whitespaces)
+        var items = store.items
+        // 类型过滤
+        switch filter {
+        case .short: items = items.filter { !$0.isLongText }
+        case .long: items = items.filter { $0.isLongText }
+        case .all: break
+        }
         if q.isEmpty {
-            filtered = store.items
+            filtered = items
         } else {
-            filtered = store.items.filter {
+            filtered = items.filter {
                 $0.text.localizedCaseInsensitiveContains(q) ||
                 $0.key.lowercased().contains(q)
             }
@@ -100,6 +126,11 @@ final class PhrasesPanelController: NSWindowController, NSTableViewDataSource, N
     // MARK: - Actions
 
     @objc private func searchChanged() {
+        reloadData()
+    }
+
+    @objc private func filterChanged(_ sender: NSSegmentedControl) {
+        filter = Filter(rawValue: sender.selectedSegment) ?? .all
         reloadData()
     }
 

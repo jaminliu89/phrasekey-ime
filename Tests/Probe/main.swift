@@ -16,7 +16,8 @@ guard !args.isEmpty else {
 }
 
 let stepMode = args.contains("--step")
-// 方案开关：默认方案是小鹤双拼，探针必须能按方案跑，否则测的根本不是用户实际路径。
+let listMode = args.contains("--list")
+// 方案选择：不传时跟随产品默认（InputScheme.default）。
 // 方案选择：不传时跟随产品默认（InputScheme.default）。
 // 坑（已定性第 4 次）：此处原为写死 `: .pinyin` —— 探针默认测的不是
 //   用户默认路径，导致「验证默认方案」时实际验的是全拼，结论完全不作数。
@@ -36,12 +37,21 @@ func dump(_ input: String, indent: String = "") {
         print("\(indent)\(input)  ⚠️ 候选为空（断档）")
         return
     }
-    let head = res.prefix(10).enumerated().map { i, e in
-        let mark = e.type == "hotword" ? "★" : ""
-        // score 与 freq 均打印：只看 score 会误以为同分就是没排序（我自己踩过）
-        return "\(i + 1).\(mark)\(e.text)[s\(e.score)/f\(e.freq)]"
-    }.joined(separator: "  ")
-    print("\(indent)\(input)  共\(res.count)  \(head)")
+    if listMode {
+        print("\(indent)\(input)  共\(res.count) 条：")
+        for (i, e) in res.enumerated() {
+            let text = String(e.text.prefix(50)).replacingOccurrences(of: "\n", with: "↵")
+            let mark = e.type == "hotword" ? "★" : " "
+            print(String(format: "\(indent)  %2d.%@ %@  [s%d/f%d]", i+1, mark, text, e.score, e.freq))
+        }
+    } else {
+        let head = res.prefix(10).enumerated().map { i, e in
+            let mark = e.type == "hotword" ? "★" : ""
+            // score 与 freq 均打印：只看 score 会误以为同分就是没排序（我自己踩过）
+            return "\(i + 1).\(mark)\(e.text)[s\(e.score)/f\(e.freq)]"
+        }.joined(separator: "  ")
+        print("\(indent)\(input)  共\(res.count)  \(head)")
+    }
 }
 
 for input in inputs {

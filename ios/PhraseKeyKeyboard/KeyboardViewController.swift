@@ -365,6 +365,15 @@ final class KeyboardViewController: UIInputViewController {
 
     // MARK: - 短语面板（项目核心卖点的可见入口）
 
+    /// 短语面板显示类型：全部 / 短常用语 / 长文本
+    /// 长文本不参与正常打字候选，只能在面板里手动选择，避免误触。
+    private enum PhrasePadFilter: Int {
+        case all = 0
+        case short = 1
+        case long = 2
+    }
+    private var phrasePadFilter: PhrasePadFilter = .all
+
     /// 当前面板选中的分类（nil = 全部）。分类取自简码首字母，见 phraseCategories。
     private var phraseCategory: String?
 
@@ -406,13 +415,26 @@ final class KeyboardViewController: UIInputViewController {
             container.addSubview(tip)
             tip.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
-                tip.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-                tip.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                tip.centerXAnchor.constraint(equalTo: container.centerX),
+                tip.centerYAnchor.constraint(equalTo: container.centerY),
                 tip.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: 16),
                 tip.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -16),
             ])
             return container
         }
+
+        // ── 类型切换：全部 / 短常用语 / 长文本
+        let filterControl = UISegmentedControl(items: ["全部", "短语", "长文本"])
+        filterControl.selectedSegmentIndex = phrasePadFilter.rawValue
+        filterControl.addTarget(self, action: #selector(phraseFilterChanged(_:)), for: .valueChanged)
+        filterControl.setTitleTextAttributes([
+            .font: UIFont.systemFont(ofSize: 12, weight: .medium),
+            .foregroundColor: Palette.foreground
+        ], for: .normal)
+        filterControl.setTitleTextAttributes([
+            .font: UIFont.systemFont(ofSize: 12, weight: .semibold),
+            .foregroundColor: Palette.foreground
+        ], for: .selected)
 
         // ── 分类条 ──
         let catScroll = UIScrollView()
@@ -447,7 +469,14 @@ final class KeyboardViewController: UIInputViewController {
         listScroll.addSubview(listStack)
         listScroll.translatesAutoresizingMaskIntoConstraints = false
 
-        let shown = all.filter { hw in
+        // 按类型 + 分类双重过滤
+        let typeFiltered: [Hotword]
+        switch phrasePadFilter {
+        case .all: typeFiltered = all
+        case .short: typeFiltered = all.filter { !$0.isLongText }
+        case .long: typeFiltered = all.filter { $0.isLongText }
+        }
+        let shown = typeFiltered.filter { hw in
             guard let c = phraseCategory, !c.isEmpty else { return true }
             return hw.key.lowercased().hasPrefix(c)
         }
@@ -471,10 +500,16 @@ final class KeyboardViewController: UIInputViewController {
             b.heightAnchor.constraint(equalToConstant: 38).isActive = true
         }
 
+        container.addSubview(filterControl)
         container.addSubview(catScroll)
         container.addSubview(listScroll)
         NSLayoutConstraint.activate([
-            catScroll.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+            filterControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 6),
+            filterControl.centerXAnchor.constraint(equalTo: container.centerX),
+            filterControl.widthAnchor.constraint(equalToConstant: 220),
+            filterControl.heightAnchor.constraint(equalToConstant: 28),
+
+            catScroll.topAnchor.constraint(equalTo: filterControl.bottomAnchor, constant: 4),
             catScroll.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 6),
             catScroll.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -6),
             catScroll.heightAnchor.constraint(equalToConstant: 30),
@@ -499,8 +534,14 @@ final class KeyboardViewController: UIInputViewController {
     /// 分类 = 简码首字母。518 条无限滚动找不到东西，按首字母分组最直观
     /// （用户的简码本来就是按内容首字母取的，如 wmd/wrd 都是「我…」开头）。
     private func phraseCategories(_ all: [Hotword]) -> [String] {
+        let list: [Hotword]
+        switch phrasePadFilter {
+        case .all: list = all
+        case .short: list = all.filter { !$0.isLongText }
+        case .long: list = all.filter { $0.isLongText }
+        }
         var set = Set<String>()
-        for hw in all {
+        for hw in list {
             if let f = hw.key.lowercased().first, f.isLetter { set.insert(String(f)) }
         }
         return [""] + set.sorted()
@@ -509,6 +550,12 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func phraseCategoryTapped(_ sender: UIButton) {
         let c = sender.accessibilityHint ?? ""
         phraseCategory = c.isEmpty ? nil : c
+        rebuildKeys()
+    }
+
+    @objc private func phraseFilterChanged(_ sender: UISegmentedControl) {
+        phrasePadFilter = PhrasePadFilter(rawValue: sender.selectedSegmentIndex) ?? .all
+        phraseCategory = nil // 切换类型时重置分类
         rebuildKeys()
     }
 

@@ -56,10 +56,11 @@ final class Searcher {
     }
 
     /// Combined search. scheme: pinyin / xiaohe shuangpin / xiaohe xingma.
+    /// includeLongText: 是否包含长文本（>100字），默认 false ——
+    ///   候选栏搜索不混入长文本，避免打字误触长文章；
+    ///   短语面板浏览时传 true。
     // 默认参数必须跟随产品默认方案（InputScheme.default），不许写死 .pinyin。
-    // 坑（已定性）：写死 .pinyin 时，调用方漏传 scheme 就静默按全拼查 —— 不报错、
-    //   结果只是「候选不对」，极难定位。iOS 键盘硬编码 .pinyin 与此同源（见 7c49895）。
-    func search(_ input: String, scheme: InputScheme = .default) -> [Candidate] {
+    func search(_ input: String, scheme: InputScheme = .default, includeLongText: Bool = false) -> [Candidate] {
         var norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !norm.isEmpty else { return [] }
 
@@ -83,8 +84,9 @@ final class Searcher {
         let isAlphabetic = norm.unicodeScalars.allSatisfy { CharacterSet.lowercaseLetters.contains($0) }
 
         if isAlphabetic {
-            // 常用语优先
+            // 常用语优先（长文本默认排除，见 includeLongText 说明）
             for (type, hw) in HotwordsStore.shared.search(norm, scheme: scheme) {
+                if !includeLongText && hw.isLongText { continue }
                 let score: Int
                 switch type {
                 case .key: score = 10000
@@ -116,6 +118,7 @@ final class Searcher {
         } else {
             // 直接输入中文（如粘贴）：按子串找常用语
             for (type, hw) in HotwordsStore.shared.search(norm, scheme: scheme) {
+                if !includeLongText && hw.isLongText { continue }
                 let score = type == .contains ? 1000 : 2000
                 out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw, pinyin: "", freq: 0))
             }
@@ -172,13 +175,14 @@ final class Searcher {
 
     /// 精确匹配常用语（key 完全相等）。用于空格自动展开。
     /// 只有精确匹配才自动展开；前缀匹配不展开，避免误触。
+    /// 长文本不参与自动展开—— 长文本要去短语面板手动点，避免盲打误触。
     func findExactHotword(_ input: String, scheme: InputScheme = .default) -> Hotword? {
         let norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !norm.isEmpty else { return nil }
         let results = HotwordsStore.shared.search(norm, scheme: scheme)
         // 只取 .key 类型的精确匹配（第一条就是最高分）
         for (type, hw) in results {
-            if type == .key && hw.key.lowercased() == norm {
+            if type == .key && hw.key.lowercased() == norm && !hw.isLongText {
                 return hw
             }
         }

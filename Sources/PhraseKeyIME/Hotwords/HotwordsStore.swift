@@ -15,6 +15,11 @@ struct Hotword: Codable, Identifiable, Equatable {
     var flypy: String {
         FlypyCodec.encode(pinyin.split(separator: " ").map(String.init))
     }
+
+    /// 是否为长文本（段落级模板）。长文本不参与候选栏匹配，
+    /// 只在短语面板里可见，避免打字时误触长文章。
+    /// 阈值 100 字：大概 2-3 句话以内算常用短语，超过算模板。
+    var isLongText: Bool { text.count > 100 }
 }
 
 /// Phrase store: JSON persistence + CRUD + search + import.
