@@ -171,3 +171,58 @@ B 的每一步都是：搬一个组件 → 构建 → 装机 → 你实测 → �
 
 macOS 端暂不动 —— 用户明确当前优先手机（见 03-plan.md 优先级失误记录）。
 待 iOS 稳定后再用鼠须管改造 macOS 候选面板。
+
+
+---
+
+## 9. 切到 macOS + 鼠须管（2026-08-24，用户选定）
+
+用户选「鼠须管」。开工前先验证 macOS 端可达性 —— 结果发现比面板美观更根本的问题。
+
+### ★ 根因：macOS 端你从来没能用过它
+
+实测：
+```
+~/Library/Input Methods/PhraseKey.app        存在（用户级）
+/Library/Input Methods/PhraseKey.app         不存在
+defaults read com.apple.HIToolbox AppleEnabledInputSources | grep PhraseKey
+  → 0 条
+pgrep -fl PhraseKey → 77829（进程在跑）
+```
+
+**进程能被 `open` 拉起，但系统从未注册它** —— 系统设置的输入法列表里找不到，
+所以无法添加、无法切换、无法使用。
+
+对照标本：本机正常工作的鼠须管在 **`/Library/Input Methods/`（系统级）**。
+
+→ 定性（**已验证**）：macOS 对用户级输入法的注册不可靠。
+  这与 `28aa050` 那次「Info.plist 缺 ComponentInputModeDict」是**两个独立问题**，
+  当时修完 plist 结构就以为好了，没验证注册结果 —— 又一次「构建成功 ≠ 可用」。
+
+### 已修
+`Scripts/install.sh` 改为：
+- 安装到 `/Library/Input Methods/`（sudo），并清掉用户级旧安装
+  （两份并存会让系统看到重复 bundle ID）
+- 安装后**出厂验证**：bundle 存在 / 签名有效 / 4 个 IMK 关键键 / 词库 ≥10000 条
+- 验证不过直接 `exit 1`，不允许声称可用
+- 输出里给出重登后的自查命令，用户可自己确认是否真被注册
+
+### 鼠须管候选面板凭什么 1322 行 —— 逐项对比
+
+| 能力 | 鼠须管 | 我们 | 差距性质 |
+|---|---|---|---|
+| 双主题（light/dark 独立 Theme 对象） | `SquirrelTheme` 364 行 | 已有双色板（`Palette` 式静态色） | **不大**，我们够用 |
+| 圆角/高亮背景 | CGPath 精确绘制 | 已有 `cornerRadius` | **不大** |
+| **翻页指示**（`canPageUp/canPageDown` + 箭头 CGPath） | 有 | **无** | 候选多了用户不知道还有下一页 |
+| **预编辑区**（`preeditRange` + 高亮已输入拼音） | 有 | **无** | 打字时面板上看不到已输入内容 |
+| NSTextLayoutManager 精确排版 | 有 | NSTextField 拼 | 影响长候选换行与对齐 |
+
+→ 结论：**差距在功能不在配色**。我上一轮以为是"不够漂亮"，
+  实际是"缺翻页指示与预编辑区"这两个功能性缺失。
+
+### 本轮顺序（先可用，再好看）
+1. [x] 安装改系统级 + 出厂验证 —— 否则一切改动你都看不到
+2. [ ] 你注销重登，确认能在系统设置里添加 PhraseKey
+3. [ ] 补翻页指示（候选 >N 时显示 ▲▼，学鼠须管 canPageUp/canPageDown）
+4. [ ] 补预编辑区（面板顶部显示已输入拼音串 + 高亮当前音节）
+5. [ ] 长候选排版（评估是否需要上 NSTextLayoutManager）
