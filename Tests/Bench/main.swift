@@ -332,6 +332,56 @@ for code in ["nihc", "womf", "vsgo"] {
     print("  \(code) → 隐式 \(implicit.count) 条 / 显式 \(explicit.count) 条 \(same ? "✓" : "✗")")
 }
 
+// ── 小鹤零声母：o 引导（用户是多年小鹤用户，此处错一个字都不能用）────
+// 坑（已定性）：原实现是 aa/ad/aj/ah/ac + ee/ew/ef/eg + oo/oz，
+//   即「零声母 = 韵母首字母 + 韵母键」—— 这是**自然码/微软双拼**规则，不是小鹤。
+//   后果：oa(啊)/od(爱)/oj(安)/of(恩) 全部落空，只有 oz(欧) 恰好撞对。
+// 小鹤规则：统一用 o 引导。这 12 个是零声母全集，缺一个用户就会撞上。
+print("\n=== 小鹤零声母 o 引导 ===")
+let zeroCases: [(String, String)] = [
+    ("oa", "a"), ("od", "ai"), ("oj", "an"), ("oh", "ang"), ("oc", "ao"),
+    ("oe", "e"), ("ow", "ei"), ("of", "en"), ("og", "eng"), ("or", "er"),
+    ("oo", "o"), ("oz", "ou"),
+]
+for (code, syl) in zeroCases {
+    let decoded = FlypyCodec.decodeSyllable(code)
+    if decoded != syl {
+        failures.append("零声母 \(code) 应解码为 \(syl)，实得 \(decoded ?? "nil")")
+    }
+    // 反向：encode 必须能从音节回到该码（往返一致）
+    if let back = FlypyCodec.encode(syl), back != code {
+        failures.append("零声母 encode(\(syl)) 应得 \(code)，实得 \(back)")
+    }
+}
+print("  12 个零声母音节往返检查完毕")
+
+// 零声母参与组词（词首/词尾都要能用）
+print("\n=== 零声母组词 ===")
+let zeroWordCases: [(String, String)] = [
+    ("ojqr", "安全"), ("ojpd", "安排"), ("orqp", "而且"), ("odhc", "爱好"),
+    ("ozvz", "欧洲"), ("oewd", "额外"), ("vioj", "治安"), ("yibj", "一般"),
+]
+for (code, word) in zeroWordCases {
+    let r = PinyinEngine.shared.query(code, scheme: .flypy)
+    if r.first?.word != word {
+        failures.append("零声母组词 \(code) 首选应为 \(word)，实得 \(r.first?.word ?? "空")")
+    }
+}
+print("  8 个零声母组词检查完毕")
+
+// ── 全拼保留但不首选（用户明确要求）────────────────────────────────
+// 双拼精确命中时，全拼结果不得抢占首选 —— 双拼用户盲打，
+// 首选被顶掉会直接上错字。
+print("\n=== 双拼首选不被全拼抢占 ===")
+for (code, word) in [("nihc", "你好"), ("womf", "我们"), ("vsgo", "中国"),
+                     ("ufme", "什么"), ("ybww", "因为"), ("mktm", "明天")] {
+    let r = PinyinEngine.shared.query(code, scheme: .flypy)
+    if r.first?.word != word {
+        failures.append("双拼 \(code) 首选应为 \(word)，实得 \(r.first?.word ?? "空")（可能被全拼抢占）")
+    }
+}
+print("  6 个双拼全码首选检查完毕")
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")

@@ -368,16 +368,66 @@ final class PinyinEngine {
         case .flypy, .flypyXing:
             let user = _userByFlypy[input.lowercased()] ?? []
             let fp = searchFlypy(input)
+
+            // 全拼兼容：保留但**不首选**（用户明确要求）。
+            // 场景：多年小鹤用户偶尔会下意识敲全拼（或拷贝全拼串），
+            //   此时宁可给个傅下，也不能让它抢双拼的首选 —— 双拼用户盲打，
+            //   首选被全拼结果顶掉会直接上错字。
+            // 做法：双拼结果在前，全拼结果去重后追加在后。
+            let plainPinyin = pinyinFallbackEntries(input)
+
             if user.isEmpty && fp.isEmpty {
                 let decoded = FlypyCodec.decode(input).joined()
-                if let u = _userByPinyin[decoded] { return u }
+                if let u = _userByPinyin[decoded] { return u + plainPinyin }
                 let py = searchPinyin(decoded)
-                if !py.isEmpty { return py }
+                if !py.isEmpty { return py + plainPinyin }
                 // 双拼同样需要渐进式兜底：双拼每字定长 2 键，用户必然经过奇数长度，
                 // 此前无此回退 → 奇数位候选全空（实测 wourfg 6 步 5 空）。
-                return searchFlypyProgressive(input)
+                let prog = searchFlypyProgressive(input)
+                // 顺序：全拼实词 **先于** 渐进兜底。
+                // 理由（实测）：输入 zhongguo 时双拼强行解码为 zang/on/geng/shuo，
+                //   渐进兜底产出 12 条生僻字（葬/脏/臧/賍… 均 s1249），
+                //   全拼的「中国」若追在后面会被埋到第 13 位 —— 等于没保留。
+                //   渐进兜底本质是「宁可给点东西也不要空」的低质量候选，
+                //   而全拼命中是用户真实意图，质量高于前者 → 应排在其前。
+                //   但仍在双拼精确命中（user/fp）之后 —— 双拼永远优先。
+                return dedupAppend(plainPinyin, prog)
             }
-            return user + fp
+            // 双拼精确命中：双拼结果在前，全拼去重后追加。
+            // 但坑（实测）：输入 zhongguo（8 键）时 byFlypy 竟然命中 —— 它被当成
+                //   4 个双拼音节 zang/on/geng/shuo，产出 12 条生僻字（均 s1249）。
+            //   全拼的「中国」追在后面会被埋掉 → 等于没保留。
+            // 判据：双拼结果若**全是单字**而全拼能出多字词，说明这串更像全拼，
+            //   此时全拼的多字词应提到双拼单字之前（仍在 user 词典之后）。
+            //   不直接比得分：得分由 Searcher 算，引擎层只能给顺序建议。
+            let fpAllSingleChar = !fp.isEmpty && fp.allSatisfy { $0.word.count == 1 }
+            let plainHasPhrase = plainPinyin.contains { $0.word.count > 1 }
+            if fpAllSingleChar && plainHasPhrase {
+                return dedupAppend(user + plainPinyin, fp)
+            }
+            return dedupAppend(user + fp, plainPinyin)
         }
+    }
+
+    /// 双拼模式下的「全拼兼容候选」：把输入当作全拼串查一次。
+    /// 只在输入看起来**像全拼**时才查，避免无谓开销：
+    ///   双拼码长必为偶数且通常 ≤4 键；长于 4 键的字母串大概率是全拼。
+    /// 不做简拼（searchInitials）—— 双拼模式下简拼与双拼码冲突严重。
+    private func pinyinFallbackEntries(_ input: String) -> [DictEntry] {
+        let s = input.lowercased()
+        guard s.count >= 4 else { return [] }   // 太短不像全拼，且易与双拼碰撞
+        return searchPinyin(s)
+    }
+
+    /// 把补充候选去重后追加到主候选尾部（主候选顺序不变）。
+    private func dedupAppend(_ primary: [DictEntry], _ extra: [DictEntry]) -> [DictEntry] {
+        guard !extra.isEmpty else { return primary }
+        var seen = Set(primary.map { $0.word })
+        var out = primary
+        for e in extra where !seen.contains(e.word) {
+            out.append(e)
+            seen.insert(e.word)
+        }
+        return out
     }
 }

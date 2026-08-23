@@ -31,10 +31,22 @@ enum FlypyCodec {
     ]
 
     /// Zero-initial syllable shuangpin code table (first letter + final key)
+    /// 零声母音节表 —— **小鹤双拼规则：统一用 `o` 作为零声母引导键**。
+    ///
+    /// 坑（已定性，用户是多年小鹤用户，第一分钟即撞上）：
+    ///   原实现是 `aa/ad/aj/ah/ac` + `ee/ew/ef/eg` + `oo/oz`，
+    ///   即「零声母 = 该韵母首字母 + 韵母键」—— **这是自然码/微软双拼的规则，不是小鹤**。
+    ///   后果：小鹤用户打 oa(啊)/od(爱)/oj(安)/of(恩) 全部落空，只有 oz(欧) 恰好撞对。
+    ///
+    /// 小鹤零声母规则（官方 flypy 键位）：`o` + 韵母键
+    ///   a→oa  ai→od  an→oj  ang→oh  ao→oc
+    ///   e→oe  ei→ow  en→of  eng→og  er→or
+    ///   o→oo  ou→oz
+    /// 注意 er=or 与「声母 r」无冲突：r 的韵母键位下 o+r 只可能是 er。
     static let zeroSyllables: [String: String] = [
-        "aa": "a", "ad": "ai", "aj": "an", "ah": "ang", "ac": "ao",
-        "ee": "e", "ew": "ei", "ef": "en", "eg": "eng", "er": "er",
-        "oo": "o", "oz": "ou"
+        "oa": "a",  "od": "ai", "oj": "an", "oh": "ang", "oc": "ao",
+        "oe": "e",  "ow": "ei", "of": "en", "og": "eng", "or": "er",
+        "oo": "o",  "oz": "ou"
     ]
 
     /// 韵母（全拼）→ 键（编码方向，含多音代表）
