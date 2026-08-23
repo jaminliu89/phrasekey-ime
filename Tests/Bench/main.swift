@@ -403,6 +403,33 @@ for (code, word) in colloquialCases {
 }
 print("  \(colloquialCases.count) 个日常搭配检查完毕")
 
+// ── 音节分隔符 ' 必须可用（用户实测报「你居然没做」）──────────────
+// 坑（已定性）：' 让 Searcher.search 的 isAlphabetic 判定失败，
+//   整串被当「中文子串」查 → **返回空**。用户按一下撇号候选全废且无提示。
+// ' 是输入法界事实标准（RIME / 小鹤 / Gboard 一致），不是可选功能 ——
+//   多年双拼用户已有肌肉记忆，缺它等于习惯动作直接失效。
+print("\n=== 音节分隔符 ' ===")
+let sepCases: [(String, String)] = [
+    ("ni'hc", "你好"), ("wo'mf", "我们"), ("vs'go", "中国"),
+    ("oj'qr", "安全"), ("wo'ui", "我是"), ("or'qp", "而且"),
+]
+for (code, word) in sepCases {
+    let r = Searcher.shared.search(code, scheme: .flypy)
+    if r.first?.text != word {
+        failures.append("分隔符 \(code) 首选应为 \(word)，实得 \(r.first?.text ?? "空")")
+    }
+}
+// 等价性：带分隔符与不带必须结果一致（分隔符只是视觉切分，不改变查询语义）
+for (code, _) in sepCases {
+    let stripped = code.replacingOccurrences(of: "'", with: "")
+    let a = Searcher.shared.search(code, scheme: .flypy).first?.text
+    let b = Searcher.shared.search(stripped, scheme: .flypy).first?.text
+    if a != b {
+        failures.append("分隔符等价性破坏：\(code)→\(a ?? "空") 但 \(stripped)→\(b ?? "空")")
+    }
+}
+print("  \(sepCases.count) 个分隔符用例 + 等价性检查完毕")
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")

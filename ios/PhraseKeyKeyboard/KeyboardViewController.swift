@@ -37,6 +37,71 @@ final class KeyboardViewController: UIInputViewController {
         static let bottomHeight: CGFloat = 44
     }
 
+    // MARK: - 配色
+
+    /// 键盘配色（集中定义，不要在各处写死颜色）。
+    ///
+    /// 坑（用户实测报告「待选字体黑色 字母蓝色」），根因不是「忘了适配深色」，
+    /// 而是 **iOS 系统级 bug**（KeyboardKit issue #305，已报 Apple）：
+    ///   编辑**深色外观文本框**时，iOS 会给键盘扩展**错误的 color scheme** ——
+    ///   即使系统是浅色，扩展也被告知是深色。
+    ///
+    /// 这否决了两种想当然的修法：
+    ///   ❌ 硬编码颜色（原实现：候选字 .black、拼音串蓝色）→ 深色下不可读
+    ///   ❌ 改用 .label / .systemBackground 语义色 → **系统给的外观信号本身是错的**
+    ///
+    /// 与 macOS 端那个坑**同源**：不能信任框架给的外观判定
+    ///   （macOS 那次是 NSApp.effectiveAppearance 判的是输入法进程自身外观）。
+    ///
+    /// 采用方案：照拄 Hamster 仓输入法 / KeyboardKit 生产验证过的**半透明白**变通色。
+    ///   半透明白叠在任何底色上都产生对比 → 即使外观判定错了，
+    ///   也不会出现「黑字配深底」这种不可读组合。
+    ///   色值来源：Hamster `Colors.xcassets/*.colorset`（MIT，1621★，已实测读取）。
+    ///   详见 `.pi/plans/00-research.md` §8。
+    private enum Palette {
+        /// 字母键背景：浅色纯白 / 深色半透明白 30%
+        static let keyBackground = UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(white: 1, alpha: 0.30)
+                : UIColor.white
+        }
+
+        /// 功能键背景（shift / 删除 / 符号切换）：比字母键暗一档
+        static let fnKeyBackground = UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(white: 1, alpha: 0.10)
+                : UIColor(red: 0.702, green: 0.718, blue: 0.753, alpha: 1)
+        }
+
+        /// 键盘底板
+        static let keyboardBackground = UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(white: 0.173, alpha: 1)
+                : UIColor(red: 0.835, green: 0.839, blue: 0.867, alpha: 1)
+        }
+
+        /// 键帽 / 候选字文字：深色下纯白，浅色下纯黑
+        /// （文字不能用半透明 —— 会发糊降低可读性）
+        static let foreground = UIColor { tc in
+            tc.userInterfaceStyle == .dark ? .white : .black
+        }
+
+        /// 常用语候选（需要区分于普通候选）：两种外观下均高对比的橙色
+        /// 不用系统蓝（原实现 RGB 0.26/0.52/0.96）：深色背景下蓝字对比度不足。
+        static let accent = UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(red: 1.0, green: 0.62, blue: 0.23, alpha: 1)
+                : UIColor(red: 0.85, green: 0.42, blue: 0.0,  alpha: 1)
+        }
+
+        /// 拼音串（次要信息，比候选字弱但仍须清楚可读）
+        static let composeText = UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(white: 0.85, alpha: 1)
+                : UIColor(white: 0.25, alpha: 1)
+        }
+    }
+
     // MARK: - 生命周期
 
     override func viewDidLoad() {
@@ -89,9 +154,14 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: - UI 构建（全约束，无 frame 计算）
 
     private func buildUI(in host: UIView) {
+        // 键盘底板色：此前**从未设置**，依赖系统默认 ——
+        // 这是用户报「字母看不清」的另一半原因：底板与键帽可能同色，
+        // 键与键的边界完全消失。底板必须比字母键暗，才能读出键位形状。
+        host.backgroundColor = Palette.keyboardBackground
+
         // ── 顶部：拼音显示 + 候选滚动条 ──
         composeLabel.font = .systemFont(ofSize: 15, weight: .medium)
-        composeLabel.textColor = UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1)
+        composeLabel.textColor = Palette.composeText
         composeLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         candidateStack.axis = .horizontal
@@ -150,11 +220,11 @@ final class KeyboardViewController: UIInputViewController {
     private func makeKey(_ title: String, wide: Bool = false, dark: Bool = false) -> UIButton {
         let b = UIButton(type: .system)
         b.setTitle(title, for: .normal)
-        b.setTitleColor(.black, for: .normal)
+        b.setTitleColor(Palette.foreground, for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: title.count > 1 ? 15 : 21, weight: .regular)
         b.titleLabel?.adjustsFontSizeToFitWidth = true
         b.titleLabel?.minimumScaleFactor = 0.7
-        b.backgroundColor = dark ? UIColor(white: 0.68, alpha: 1) : .white
+        b.backgroundColor = dark ? Palette.fnKeyBackground : Palette.keyBackground
         b.layer.cornerRadius = 6
         b.layer.shadowColor = UIColor.black.withAlphaComponent(0.25).cgColor
         b.layer.shadowOffset = CGSize(width: 0, height: 1)
@@ -199,8 +269,13 @@ final class KeyboardViewController: UIInputViewController {
                     ["_","\\","|","~","<",">","€","£","•","·"],
                     ["123",".",",","?","!","'","⌫"]]
         } else {
+            // 第 2 行末尾补 ' 分隔符（Gboard 中文键盘同做法）。
+            // 坑（用户实测报告）：此前无此键 —— 用户要按分隔符必须切到符号面板，
+            //   而符号面板一按就退出拼音上下文，等于用不了。
+            // 位置理由：第 2 行原本只 9 键（asdfghjkl），末尾天然有位；
+            //   放这里不挤压任何字母键宽度，肌肉记忆不受影响。
             rows = [["q","w","e","r","t","y","u","i","o","p"],
-                    ["a","s","d","f","g","h","j","k","l"],
+                    ["a","s","d","f","g","h","j","k","l","'"],
                     ["⇧","z","x","c","v","b","n","m","⌫"]]
         }
 
@@ -215,14 +290,20 @@ final class KeyboardViewController: UIInputViewController {
             let isFn = k.count > 1 || k == "⇧" || k == "⌫"
             let b = makeKey(displayTitle(k), dark: isFn)
             if k == "⇧" {
-                b.backgroundColor = isShifted ? UIColor(white: 0.95, alpha: 1) : UIColor(white: 0.68, alpha: 1)
+                // shift 选中态：按下时用字母键的亮色，未按用功能键暗色
+                b.backgroundColor = isShifted ? Palette.keyBackground : Palette.fnKeyBackground
                 shiftButton = b
             }
+            // 用 tag 标记功能键，供下面筛字母键用。
+            // 坑（已定性）：原实现靠 `backgroundColor == .white` 反推字母键 ——
+            //   靠颜色识别控件类型是脆弱写法：改配色就会连带把布局搞坏
+                //   （本次改深色适配时就会踩上）。改用显式 tag。
+            b.tag = isFn ? -1 : 0
             r3.addArrangedSubview(b)
             if isFn { b.widthAnchor.constraint(equalToConstant: 44).isActive = true }
         }
-        // 让字母键平分剩余空间
-        let letters = r3.arrangedSubviews.filter { ($0 as? UIButton)?.backgroundColor == .white }
+        // 让字母键平分剩余空间（靠 tag 而非颜色识别，见上方注释）
+        let letters = r3.arrangedSubviews.filter { ($0 as? UIButton)?.tag == 0 }
         for v in letters.dropFirst() {
             v.widthAnchor.constraint(equalTo: letters[0].widthAnchor).isActive = true
         }
@@ -272,8 +353,7 @@ final class KeyboardViewController: UIInputViewController {
             let b = UIButton(type: .system)
             let mark = c.type == "hotword" ? "⌘ " : ""
             b.setTitle(mark + c.text, for: .normal)
-            b.setTitleColor(c.type == "hotword"
-                            ? UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1) : .black,
+            b.setTitleColor(c.type == "hotword" ? Palette.accent : Palette.foreground,
                             for: .normal)
             b.titleLabel?.font = .systemFont(ofSize: 17, weight: i == 0 ? .semibold : .regular)
             b.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
@@ -324,6 +404,20 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         // 非字母（数字/符号）直接上屏
+        // 例外：撇号 ' 是**音节分隔符**（RIME / 小鹤 / Gboard 事实标准），
+        //   在拼音上下文中必须进引擎而不是上屏。
+        // 坑（用户实测报告）：此前它走这条 guard 直接上屏 ——
+        //   用户想分隔，结果文档里多了个 ' ，拼音串不变。
+        // 仅当已在组词（composing 非空）时才当分隔符；
+        //   空串时按 ' 仍照常上屏（用户可能真想打英文缩写号 don't）。
+        let isSeparator = (raw == "'")
+        if isSeparator, let e = engine, !e.composing.isEmpty {
+            // 交给引擎：引擎层会剥离撇号（见 Searcher.search 注释），
+            // 这里只管把它计入组词串，使拼音栏能显示用户按了分隔。
+            e.append("'")
+            renderCandidates()
+            return
+        }
         guard raw.count == 1, raw.first!.isLetter else {
             textDocumentProxy.insertText(raw)
             return

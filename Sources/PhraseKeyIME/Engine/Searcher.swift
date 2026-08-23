@@ -60,8 +60,23 @@ final class Searcher {
     // 坑（已定性）：写死 .pinyin 时，调用方漏传 scheme 就静默按全拼查 —— 不报错、
     //   结果只是「候选不对」，极难定位。iOS 键盘硬编码 .pinyin 与此同源（见 7c49895）。
     func search(_ input: String, scheme: InputScheme = .default) -> [Candidate] {
-        let norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var norm = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !norm.isEmpty else { return [] }
+
+        // ── 音节分隔符：撇号 ' ──────────────────────────────────────────
+        // 输入法界的事实标准（RIME / 小鹤 / Gboard 都用 '），用于消除切分歧义。
+        // 坑（用户实测报告）：此前完全未处理 —— 撇号会让下面的 isAlphabetic
+        //   判定失败，整串被当「中文子串」查，**返回空**。
+        //   即用户按一下撇号，候选全废且无任何提示。
+        // 处理策略：双拼每字定长 2 键，切分本无歧义，撇号只是用户的习惯动作
+        //   → 直接剥离即可。全拼确实需要它消歧（xian → xi'an），
+        //   但本项目全拼是兼容路径（非首选），剥离后仍能靠词库命中，
+        //   故统一剥离，不为全拼单独建分段查询路径（YAGNI）。
+        // 同时兼容中文全角撇号 ’（中文键盘下容易打出）。
+        norm = norm.replacingOccurrences(of: "'", with: "")
+                   .replacingOccurrences(of: "\u{2019}", with: "")
+        guard !norm.isEmpty else { return [] }
+
         var out: [Candidate] = []
 
         // 拼音字符判定：全字母（含 v 代替 ü）走拼音/简码；含中文直接当子串
