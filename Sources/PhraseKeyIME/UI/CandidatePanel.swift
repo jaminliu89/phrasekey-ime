@@ -47,6 +47,10 @@ final class CandidateBarView: NSView {
 
     /// 当前可视窗口的起始下标（全局候选列表中），给序号显示用。
     private(set) var windowStart = 0
+    /// 是否还有上一页/下一页。学鼠须管 SquirrelView.canPageUp/canPageDown。
+    /// 缺它的后果：候选超过 10 个时用户不知道还有，等于翻页功能不可发现。
+    private(set) var canPageUp = false
+    private(set) var canPageDown = false
 
     func configure(candidates: [(String, String)], selected: Int) {
         // 坑（已定性）：原为 `prefix(maxVisible)` 硬截前 10 个 —— 翻页后
@@ -58,6 +62,8 @@ final class CandidateBarView: NSView {
         if start >= total { start = max(0, total - Self.maxVisible) }
         let end = min(total, start + Self.maxVisible)
         self.windowStart = start
+        self.canPageUp = start > 0
+        self.canPageDown = end < total
         self.candidates = start < end ? Array(candidates[start..<end]) : []
         self.selectedIndex = sel - start
         needsDisplay = true
