@@ -79,6 +79,28 @@ APP_HANZI="$APP/Contents/Resources/hanzi_pinyin.tsv"
 
 _gate "二进制存在且可执行" test -x "$APP/Contents/MacOS/PhraseKeyIME"
 _gate "Info.plist 存在" test -f "$APP/Contents/Info.plist"
+
+# IMK 注册必备键 —— 缺任一系统就不会把它列进「文本输入 → 添加」，
+# 表现为「装了但系统里根本找不到」，用户会一直在用系统输入法而不自知。
+# 对照标本：/Library/Input Methods/Squirrel.app（开源 RIME 前端，能正常工作）。
+for K in ComponentInputModeDict InputMethodServerControllerClass \
+         InputMethodServerDelegateClass InputMethodConnectionName TISInputSourceID; do
+  if /usr/libexec/PlistBuddy -c "Print :$K" "$APP/Contents/Info.plist" >/dev/null 2>&1; then
+    echo "    ✅ Info.plist 有 $K"
+  else
+    echo "    ❌ Info.plist 缺 $K —— 系统不会注册此输入法"
+    GATE_FAIL=1
+  fi
+done
+
+# tsInputModeCharacterRepertoireKey 必须是数组（曾误写成整数 2 导致解析失败）
+if /usr/libexec/PlistBuddy -c "Print :ComponentInputModeDict:tsInputModeListKey:com.phrasekey.ime.Hans:tsInputModeCharacterRepertoireKey:0" \
+     "$APP/Contents/Info.plist" >/dev/null 2>&1; then
+  echo "    ✅ tsInputModeCharacterRepertoireKey 是数组"
+else
+  echo "    ❌ tsInputModeCharacterRepertoireKey 不是数组 —— 系统解析会失败"
+  GATE_FAIL=1
+fi
 _gate "词库存在" test -f "$APP_DICT"
 _gate "汉字拼音表存在" test -f "$APP_HANZI"
 

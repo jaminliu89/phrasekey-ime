@@ -303,3 +303,62 @@ zhongguo → 葬/脏/臧 ❌   mingtian → 米/密/迷 ❌
 - 6 个双拼全码首选不被全拼抢占
 
 `bench_engine.sh` 全绿；出厂门禁全绿；已安装。
+
+
+### 2026-08-23 ★ 最根本的问题：输入法从未被系统注册
+
+用户说「我是还是打不出来」「是不是要重启/重装」。查证结果比预想严重得多。
+
+**实测证据**：
+```
+defaults read com.apple.HIToolbox AppleEnabledInputSources
+  → 只有苹果自带（SCIM/TCIM/ironwood），PhraseKey 从未出现
+ps aux | grep PhraseKey
+  → 无进程
+```
+
+**结论（已验证）：PhraseKey 从未被系统注册过，用户一直在用系统输入法打字。**
+所以我这几轮所有引擎修复（零声母、词库补词、排序）对他**完全没有影响** ——
+他打的字根本没经过我的代码。
+
+#### 根因：Info.plist 缺 ComponentInputModeDict + 两个键写错
+
+| 问题 | 原值 | 正确值 |
+|---|---|---|
+| **缺整个键** | 无 `ComponentInputModeDict` | 必须有，否则系统完全不注册 |
+| 键名前缀错 | `tsInputMethodCharacterRepertoireKey` | `tsInputModeCharacterRepertoireKey` |
+| 值类型错 | `= 2`（整数） | `= ["Hans"]`（字符串数组） |
+| 类型值错 | `TISInputSourceType = TISTypeKeyboardInputMode` | 无 input mode 时该值无效，应删 |
+
+`ComponentInputModeDict` 是**系统注册输入法的关键**：它声明具体输入模式，
+缺了系统就不把它列进「键盘 → 文本输入 → 添加」，用户根本找不到。
+
+#### 修法依据：取本机能正常工作的开源 IMK 输入法为对照标本
+
+不靠记忆、不靠猜。Context7 无 IMK 资料，改用**本机实证**：
+`/Library/Input Methods/Squirrel.app`（鼠须管，开源 RIME 前端，正常工作）。
+
+它的结构：顶层只放 `TISInputSourceID` + `InputMethodConnectionName` + `LSUIElement`，
+输入模式全部定义在 `ComponentInputModeDict.tsInputModeListKey` 下，
+每模式各带 `TISInputSourceID` / `TISIntendedLanguage` /
+`tsInputModeCharacterRepertoireKey`(数组) / `tsInputModeIsVisibleKey`。
+
+按此重写后，5 项关键结构与 Squirrel 完全一致，签名有效，
+**`open` 后进程首次真正跑起来（PID 77829）**。
+
+#### 已加出厂门禁（防止再次交付「装了但系统看不见」的包）
+- 5 个 IMK 注册必备键存在性检查
+- `tsInputModeCharacterRepertoireKey` 必须是数组（曾误写成整数）
+
+#### 教训（**已验证**，比技术细节更重要）
+
+**我从未验证过「用户能否真正启用这个输入法」这个最基础的前提。**
+一直在验证引擎正确性（词库、解码、排序），而用户连输入法都没能启用。
+
+这是典型的**在错误的层级上做正确的事**：
+底层验证越充分，越容易让人误以为整体可用。
+`bench_engine.sh` 28→68 条断言全绿，与「产品完全不可用」同时成立。
+
+→ 交付类项目必须**先验证最外层可达性**（用户能否启用/打开/看到），
+  再验证内部正确性。顺序颠倒等于白做。
+→ 已把「IMK 注册键完备」纳入出厂门禁，与词库校验同级。

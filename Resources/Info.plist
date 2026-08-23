@@ -1,54 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PhraseKey 输入法 Info.plist
+
+  坑（已定性，导致「装了但系统里根本看不到、无法启用」）：
+    原版缺失 ComponentInputModeDict，且顶层写了两个错键：
+      · tsInputMethodCharacterRepertoireKey = 2   ← 该键要字符串数组，写成整数
+      · TISInputSourceType = TISTypeKeyboardInputMode ← 无 input mode 定义时该值无效
+    后果：系统解析失败 → 不注册 → 用户在「键盘 → 文本输入 → 添加」里找不到，
+      于是一直在用系统输入法打字，我的所有引擎修复对他毫无影响。
+    实测证据：defaults read com.apple.HIToolbox AppleEnabledInputSources
+      里只有苹果自带输入法，PhraseKey 从未出现；且无 PhraseKey 进程在跑。
+
+  修法依据（不靠记忆，取本机能正常工作的开源 IMK 输入法为对照）：
+    /Library/Input Methods/Squirrel.app（鼠须管，开源 RIME 前端）
+    它的结构是：顶层只放 TISInputSourceID + InputMethodConnectionName + LSUIElement，
+    具体输入模式全部定义在 ComponentInputModeDict.tsInputModeListKey 下，
+    每个模式各自带 TISInputSourceID / TISIntendedLanguage /
+    tsInputModeCharacterRepertoireKey(数组) / tsInputModeIsVisibleKey。
+    注意键名是 tsInputMode... 而非 tsInputMethod...（原版用错了前缀）。
+-->
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en_US</string>
-    <key>CFBundleExecutable</key>
-    <string>PhraseKeyIME</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.phrasekey.ime</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>PhraseKey</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>NSHumanReadableCopyright</key>
-    <string>MIT License. Open-source, your phrases everywhere.</string>
+	<key>CFBundleName</key>
+	<string>PhraseKey</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.phrasekey.ime</string>
+	<key>CFBundleExecutable</key>
+	<string>PhraseKeyIME</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en_US</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleIconFile</key>
+	<string>PhraseKey</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>MIT License. Open-source, your phrases everywhere.</string>
 
-    <!-- IMK 输入法必需键 -->
-    <key>InputMethodConnectionName</key>
-    <string>PhraseKey_Connection</string>
-    <key>InputMethodServerControllerClass</key>
-    <string>PhraseKeyIME.PhraseKeyController</string>
-    <key>InputMethodServerDelegateClass</key>
-    <string>PhraseKeyIME.PhraseKeyServerDelegate</string>
-    <key>tsInputMethodCharacterRepertoireKey</key>
-    <integer>2</integer>
+	<!-- 输入法必须是后台 agent（无 Dock 图标） -->
+	<key>LSUIElement</key>
+	<true/>
 
-    <!-- 输入法在系统设置里的注册信息 -->
-    <key>TISIntendedLanguage</key>
-    <string>zh-Hans</string>
-    <key>TISInputSourceID</key>
-    <string>com.phrasekey.ime</string>
-    <key>TISLocalizedName</key>
-    <string>PhraseKey</string>
-    <key>TISInputSourceType</key>
-    <string>TISTypeKeyboardInputMode</string>
-    <key>CFBundleIconFile</key>
-    <string>PhraseKey</string>
-    <key>tsInputMethodIconFileKey</key>
-    <string>PhraseKey</string>
+	<!-- IMK 服务入口：这两个类名必须是「模块名.类名」全限定形式 -->
+	<key>InputMethodServerControllerClass</key>
+	<string>PhraseKeyIME.PhraseKeyController</string>
+	<key>InputMethodServerDelegateClass</key>
+	<string>PhraseKeyIME.PhraseKeyServerDelegate</string>
+	<key>InputMethodConnectionName</key>
+	<string>PhraseKey_Connection</string>
 
-    <!-- 启动即允许以 accessory 方式存在 -->
-    <key>LSUIElement</key>
-    <true/>
+	<!-- 顶层输入源 ID（各输入模式在下面 ComponentInputModeDict 里各自再声明） -->
+	<key>TISInputSourceID</key>
+	<string>com.phrasekey.ime</string>
+
+	<!--
+	  ComponentInputModeDict：**这是系统注册输入法的关键**，缺了就整个不可见。
+	  只声明一个简体中文模式即可（方案切换是我们内部的事，不必暴露成多个输入源）。
+	-->
+	<key>ComponentInputModeDict</key>
+	<dict>
+		<key>tsInputModeListKey</key>
+		<dict>
+			<key>com.phrasekey.ime.Hans</key>
+			<dict>
+				<key>TISInputSourceID</key>
+				<string>com.phrasekey.ime.Hans</string>
+				<key>TISIntendedLanguage</key>
+				<string>zh-Hans</string>
+				<!-- 注意：字符串数组，不是整数（原版写成 2 导致解析失败） -->
+				<key>tsInputModeCharacterRepertoireKey</key>
+				<array>
+					<string>Hans</string>
+				</array>
+				<key>tsInputModeIsVisibleKey</key>
+				<true/>
+				<key>tsInputModePrimaryInScriptKey</key>
+				<true/>
+				<key>tsInputModeScriptKey</key>
+				<string>smSimpChinese</string>
+				<key>tsInputModeMenuIconFileKey</key>
+				<string>PhraseKey</string>
+				<key>tsInputModeAlternateMenuIconFileKey</key>
+				<string>PhraseKey</string>
+				<key>tsInputModePaletteIconFileKey</key>
+				<string>PhraseKey</string>
+			</dict>
+		</dict>
+		<key>tsVisibleInputModeOrderedArrayKey</key>
+		<array>
+			<string>com.phrasekey.ime.Hans</string>
+		</array>
+	</dict>
 </dict>
 </plist>
