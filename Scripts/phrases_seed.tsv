@@ -1,0 +1,68 @@
+# PhraseKey 常用语种子集
+# 格式：简码<TAB>文本      # 开头为注释
+# 简码规则建议：全小写字母，2-6 位，取每字首字母或英文缩写
+# 用 Scripts/phrase.py seed 导入（已存在的简码会跳过，不会覆盖你自己改的）
+#
+# ⚠️ 邮箱/手机/地址这类隐私项这里只给占位，导入后用
+#    Scripts/phrase.py add <简码> <真实内容> 覆盖，或直接改 hotwords.json
+
+# ── 高频标点与符号（打字时最烦的一类）──
+sxh	：
+dh	、
+szh	；
+yh	“”
+kh	（）
+jt	→
+pj	……
+sw	%
+
+# ── 时间日期类 ──
+jt2	今天
+mt	明天
+zt	昨天
+bz	本周
+xz	下周
+by	本月
+xy	下月
+
+# ── 沟通话术（回消息最省事的一批）──
+hd	好的，收到
+mwt	没问题
+sysj	稍等我看一下
+gxn	感谢你的支持
+bhy	不好意思，刚才在忙
+zzcl	正在处理，稍后回复你
+ykyx	可以，我们约个时间聊
+xyxs	辛苦了
+
+# ── 会议与协作 ──
+kh2	我们开个会同步一下
+tqhy	腾讯会议
+fshy	飞书会议
+hyl	会议链接稍后发你
+ydwd	已读，我稍后详细回复
+
+# ── 开发相关 ──
+gh	GitHub
+gtb	Gitee
+prj	~/Projects/
+ll	npm run dev
+gcm	git commit -m ""
+gps	git push origin main
+gst	git status
+xcb	xcodebuild
+
+# ── 个人信息（占位，导入后请覆盖成真实内容）──
+mail	your@email.com
+tel	13800000000
+addr	请用 phrase.py add addr <你的地址> 覆盖
+name	柳俊明
+
+# ── 自媒体/内容工作（你的主业）──
+xhs	小红书
+dy	抖音
+sph	视频号
+gzh	公众号
+xgb	选题脚本已更新，请查收
+psjh	拍摄计划
+jbwd	剧本文档

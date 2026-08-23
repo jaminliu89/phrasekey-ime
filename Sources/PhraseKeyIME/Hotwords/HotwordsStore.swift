@@ -157,6 +157,13 @@ final class HotwordsStore {
     // 默认参数必须跟随产品默认方案（InputScheme.default），不许写死 .pinyin。
     // 坑（已定性）：写死 .pinyin 时，调用方漏传 scheme 就静默按全拼查 —— 不报错、
     //   结果只是「候选不对」，极难定位。iOS 键盘硬编码 .pinyin 与此同源（见 7c49895）。
+    private enum Limits {
+        /// 参与「拼音前缀匹配」的常用语最大文本长度（字数）。
+        /// 超过此长度的常用语**只能用自定义简码触发** —— 见 search 内注释。
+        /// 4 字：覆盖「你好/我们/收到/好的」这类短语，又挡住话术类长句。
+        static let maxPinyinMatchChars = 4
+    }
+
     func search(_ input: String, scheme: InputScheme = .default) -> [(SearchType, Hotword)] {
         let norm = input.lowercased()
         var out: [(SearchType, Hotword)] = []
@@ -172,16 +179,27 @@ final class HotwordsStore {
 
         if scheme.isFlypy {
             // 3. 双拼编码前缀（如输入 nihc 命中「你好」开头）
-            for hw in items where hw.flypy.hasPrefix(norm) {
+            //
+            // 坑（被回归拦下）：长文本常用语若也参与拼音前缀匹配，会**吃掉正常输入**。
+            //   实例：种子里 kh2 →「我们开个会同步一下」，其文本双拼码以 womf 开头，
+            //   于是打 womf 时首选变成整句，「我们」被挤掉 —— 用户日常打字直接被毁。
+            //   越是有用的长话术，破坏力越大（前缀越长，覆盖的正常输入越多）。
+            // 修法：只有**短文本**（≤ 4 字）才参与拼音前缀匹配。
+            //   长文本本来就是靠自定义简码触发的（那才是它的设计用途），
+            //   靠拼音打整句既不现实也无意义。
+            for hw in items where hw.text.count <= Limits.maxPinyinMatchChars
+                              && hw.flypy.hasPrefix(norm) {
                 out.append((.initials, hw))
             }
         } else {
-            // 3. 文本拼音首字母
-            for hw in items where hw.initials.hasPrefix(norm) {
+            // 3. 文本拼音首字母（同上：只短文本参与，防长话术吃掉正常输入）
+            for hw in items where hw.text.count <= Limits.maxPinyinMatchChars
+                              && hw.initials.hasPrefix(norm) {
                 out.append((.initials, hw))
             }
-            // 4. 文本子串（兜底）
-            for hw in items where hw.text.localizedCaseInsensitiveContains(norm) {
+            // 4. 文本子串（兜底）—— 需 ≥2 字符，避免单字母命中一大堆
+            for hw in items where norm.count >= 2
+                              && hw.text.localizedCaseInsensitiveContains(norm) {
                 out.append((.contains, hw))
             }
         }

@@ -178,6 +178,51 @@ do {
     }
 }
 
+// ---- ★ 常用语置顶回归（项目核心卖点）────────────────────────────
+// 为什么这是**最重要**的一组断言（见 01-positioning.md「为什么换过来」）：
+//   本项目唯一核心差异 = 「常用语与拼音候选在同一候选条里，打简码直接上屏长文本」。
+//   它要求三件事同时成立，缺一个项目就没有存在理由：
+//     ① 命中时**置顶**（不需额外按键 / 面板 / 前缀符号）
+//     ② 默认走小鹤双拼
+//     ③ 数据在本地开放格式，可 git、可脚本批处理
+//   本组断言守的是①。②③已有各自断言。
+//
+// 症状史：项目做了 22 个提交后，hotwords.json 里**一条常用语都没有** ——
+//   核心功能一直是空的，用户根本无从使用。引擎修得再好也用不上。
+//   → 教训：核心功能必须有种子数据 + 置顶断言，否则「实现了」只是代码存在。
+//   种子集见 Scripts/phrases_seed.tsv，批量管理见 Scripts/phrase.py。
+print("\n=== ★ 常用语置顶（核心卖点）===")
+do {
+    let store = HotwordsStore.shared
+    // 探针简码，测完即删，不依赖也不污染用户真实数据
+    let probeCodes = ["zzhd", "zzmail", "zzprj"]
+    let probeTexts = ["好的，收到", "probe@example.com", "~/Projects/"]
+    for i in 0..<probeCodes.count {
+        store.add(text: probeTexts[i], key: probeCodes[i])
+    }
+    defer {
+        for c in probeCodes {
+            let found = store.items.first { $0[keyPath: \Hotword.key] == c }
+            if let found { store.remove(id: found.hw_id) }
+        }
+    }
+
+    for i in 0..<probeCodes.count {
+        let r = Searcher.shared.search(probeCodes[i], scheme: .flypy)
+        guard let first = r.first else {
+            failures.append("常用语 \(probeCodes[i]) 无任何候选")
+            continue
+        }
+        if first.text != probeTexts[i] {
+            failures.append("常用语未置顶：\(probeCodes[i]) 首选是「\(first.text)」而非「\(probeTexts[i])」")
+        }
+        if first.type != "hotword" {
+            failures.append("常用语 \(probeCodes[i]) 首选 type=\(first.type)，应为 hotword")
+        }
+    }
+    print("  \(probeCodes.count) 个常用语置顶用例检查完毕")
+}
+
 // ---- 排序质量回归 ----
 // 症状史（两个 bug 叠加，均已实测定性）：
 //   ① freq 加成用 min(freq,999) 硬截断 → 7987 条高频词全部并列同分
