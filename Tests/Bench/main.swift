@@ -382,6 +382,27 @@ for (code, word) in [("nihc", "你好"), ("womf", "我们"), ("vsgo", "中国"),
 }
 print("  6 个双拼全码首选检查完毕")
 
+// ── 日常口语搭配必须能打出来（用户实测报「我是/也是 就打不出来」）──────
+// 坑（已定性）：jieba 词库是**分词用**的，天然不含「代词+系词/动词」搭配 ——
+//   它把「我是」切成「我」+「是」。抽样 60 个日常高频词缺 16 个（27%）。
+//   双拼解码完全正确（woui → wo/shi ✅），但词库无此词条 → 打不出来。
+//   **这是词库覆盖缺陷，不是双拼方案缺陷**（曾误判为方案问题，已证伪）。
+// 这些是最高频的日常搭配，任何一个打不出来用户立刻就会撞上。
+print("\n=== 日常口语搭配 ===")
+let colloquialCases: [(String, String)] = [
+    ("woui", "我是"), ("niui", "你是"), ("yeui", "也是"), ("veui", "这是"),
+    ("jqui", "就是"), ("buui", "不是"), ("hdui", "还是"), ("dzui", "都是"),
+    ("vfui", "真是"), ("zfme", "怎么"), ("vidc", "知道"),
+    ("buvidc", "不知道"), ("yzmwyz", "有没有"), ("zfmebj", "怎么办"),
+]
+for (code, word) in colloquialCases {
+    let r = PinyinEngine.shared.query(code, scheme: .flypy)
+    if r.first?.word != word {
+        failures.append("口语搭配 \(code) 首选应为 \(word)，实得 \(r.first?.word ?? "空")")
+    }
+}
+print("  \(colloquialCases.count) 个日常搭配检查完毕")
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")
