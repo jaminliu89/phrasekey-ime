@@ -23,9 +23,12 @@ It frees your phrases, dictionaries, and typing habits from proprietary lock-in 
 |---|---|
 | **Input schemes** | Pinyin / **Xiaohe Shuangpin** (default) / Xingma (needs your own code table — see below) |
 | **Phrases first** | Key matches (your shortcut → long text) always top the candidate list |
+| **Import from WeType** | One command pulls your phrases out of WeChat IME (`phrase.py wetype`) — read-only, same field layout, no conversion |
+| **Sentence segmentation** | Type multiple words in one go: `wouivsgo` → 我是中国 (DAG shortest-path over the dictionary) |
+| **Phrase panel on keyboard** | iOS: a dedicated 短语 key opens a browsable panel grouped by shortcut initial — 500+ phrases stay reachable without memorizing codes |
 | **Phrase Manager** | Browse, search, add, edit, delete phrases — full manager panel on both macOS and iOS |
 | **Quick insert from panel** | Pick a phrase in the manager → it's typed straight into the frontmost app |
-| **Import phrases** | Import from other IMEs' CSV/JSON exports (format compatible) |
+| **Paging + preedit** | macOS candidate bar shows ▲▼ when more candidates exist, and echoes the raw code you typed (essential for Shuangpin self-correction) |
 | **Auto-learn** | Words you pick get promoted — the more you type, the smarter it gets |
 | **Open data formats** | TSV/JSON — diff-able, git-able, scriptable; the data dir is yours |
 | **Privacy-first** | Data directory is yours: local, cloud, or git — you choose |
@@ -53,11 +56,23 @@ It frees your phrases, dictionaries, and typing habits from proprietary lock-in 
 ## Quick Start
 
 ```bash
-bash Scripts/build_app.sh   # Build macOS release
-bash Scripts/install.sh     # Install to ~/Library/Input Methods
+bash Scripts/build_app.sh release   # Build macOS release (with factory gates)
+bash Scripts/install.sh             # Install to /Library/Input Methods (needs sudo)
 ```
 
-Then: **Log out / restart** → System Settings → Keyboard → Input Sources → Add "PhraseKey".
+Then **log out and log back in** → System Settings → Keyboard → Input Sources → **+** → Add "PhraseKey".
+
+Verify it was actually registered (this matters — see note below):
+
+```bash
+defaults read com.apple.HIToolbox AppleEnabledInputSources | grep -A2 PhraseKey
+```
+
+> **Why system-wide (`/Library`) instead of `~/Library`?**
+> Measured 2026-08-24: with a user-level install the process launches fine, but
+> `AppleEnabledInputSources` has **zero** PhraseKey entries — macOS never registers it,
+> so it never shows up in System Settings and can't be used at all.
+> Reference specimen: Squirrel (鼠须管), a known-working IME, also installs system-wide.
 
 ### iOS (Keyboard Extension)
 
@@ -107,6 +122,13 @@ xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' C
 - [ ] Xingma shape filtering — code path exists but is **untested** (needs a user-supplied table)
 - [x] Full dictionary / Xingma code table import docs — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
 - [x] iOS hardware signing guide (free Apple ID supported — see [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md))
+- [x] **Sentence segmentation** — multi-word typing via DAG shortest path (8/8 regression)
+- [x] **WeType import** — pull your phrases out of WeChat IME, read-only (`Scripts/phrase.py wetype`)
+- [x] **iOS phrase panel** — browsable, grouped by shortcut initial; phrases bundled and seeded on first launch
+- [x] **macOS candidate paging + preedit** — ▲▼ indicator and raw-code echo (modeled on Squirrel)
+- [ ] macOS long-candidate layout — may need `NSTextLayoutManager` (Squirrel uses it)
+- [ ] iOS phrase panel search box — grouping alone gets thin past ~500 phrases
+- [ ] Scheduled incremental sync from WeType (launchd)
 
 **Explicitly out of scope** (this is a personal tool — see `.pi/plans/01-positioning.md`):
 Windows/Linux ports · clipboard history · cloud sync · bundled Xingma table · plugin/theme system
