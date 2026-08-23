@@ -17,6 +17,9 @@ final class KeyboardViewController: UIInputViewController {
     private var isNumberPad = false
     private var isSymbolPad = false
     private var isShifted = false
+    /// 短语面板是否展开。核心卖点的入口 —— 518 条常用语靠背简码不现实，
+    /// 必须有可浏览的面板（微信/搜狗都有，见 00-research.md §6）。
+    private var isPhrasePad = false
 
     // MARK: - 视图
 
@@ -259,6 +262,13 @@ final class KeyboardViewController: UIInputViewController {
             $0.removeFromSuperview()
         }
 
+        // 短语面板：替换字母区，底行保留（用户可随时切回）
+        if isPhrasePad {
+            rowsStack.addArrangedSubview(makePhrasePad())
+            buildBottomRow()
+            return
+        }
+
         let rows: [[String]]
         if isNumberPad {
             rows = [["1","2","3","4","5","6","7","8","9","0"],
@@ -309,10 +319,22 @@ final class KeyboardViewController: UIInputViewController {
         }
         rowsStack.addArrangedSubview(r3)
 
-        // 底行：数字/符号 | 🌐 | 方案 | 空格 | 回车
+        buildBottomRow()
+    }
+
+    /// 底行独立成函数：短语面板也要用它（面板只替换字母区，底行保留）。
+    private func buildBottomRow() {
+        // 底行：数字/符号 | 短语 | 🌐 | 方案 | 空格 | 回车
         let bottom = UIStackView()
         bottom.axis = .horizontal
         bottom.spacing = Metric.keySpacing
+
+        // 短语键：项目核心卖点的可见入口。
+        // 坑（用户反馈「放功能那一块全是黑的啥也没有」）：此前键盘上**没有任何**
+        //   常用语入口 —— 518 条短语只能靠记简码触发，等于核心功能不可发现。
+        let phraseKey = makeKey(isPhrasePad ? "返回" : "短语", dark: true)
+        phraseKey.removeTarget(nil, action: nil, for: .allEvents)
+        phraseKey.addTarget(self, action: #selector(togglePhrasePad), for: .touchUpInside)
 
         let numKey = makeKey(isNumberPad || isSymbolPad ? "ABC" : "123", dark: true)
         let globe = makeKey("🌐", dark: true)
@@ -329,14 +351,173 @@ final class KeyboardViewController: UIInputViewController {
         ret.removeTarget(nil, action: nil, for: .allEvents)
         ret.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
 
-        [numKey, globe, scheme, space, ret].forEach { bottom.addArrangedSubview($0) }
-        numKey.widthAnchor.constraint(equalToConstant: 44).isActive = true
-        globe.widthAnchor.constraint(equalToConstant: 40).isActive = true
-        scheme.widthAnchor.constraint(equalToConstant: 48).isActive = true
+        [numKey, phraseKey, globe, scheme, space, ret].forEach { bottom.addArrangedSubview($0) }
+        numKey.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        phraseKey.widthAnchor.constraint(equalToConstant: 48).isActive = true
+        globe.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        scheme.widthAnchor.constraint(equalToConstant: 44).isActive = true
         ret.widthAnchor.constraint(equalToConstant: 60).isActive = true
 
         rowsStack.addArrangedSubview(bottom)
         bottom.heightAnchor.constraint(equalToConstant: Metric.bottomHeight).isActive = true
+    }
+
+    // MARK: - 短语面板（项目核心卖点的可见入口）
+
+    /// 当前面板选中的分类（nil = 全部）。分类取自简码首字母，见 phraseCategories。
+    private var phraseCategory: String?
+
+    @objc private func togglePhrasePad() {
+        isPhrasePad.toggle()
+        if isPhrasePad {
+            // 进面板时清掉未完成的拼音，避免面板上屏后残留拼音串
+            engine?.reset()
+            composeLabel.text = ""
+            phraseCategory = nil
+        }
+        rebuildKeys()
+        renderCandidates()
+    }
+
+    /// 短语面板：上方分类条 + 下方可滚动短语列表。
+    ///
+    /// 为什么要做（用户反馈「放功能那一块全是黑的啥也没有」）：
+    ///   此前键盘上**没有任何**常用语入口 —— 518 条短语只能靠记简码触发。
+    ///   记不住 = 核心功能不可发现 = 等于没做。
+    ///   微信/搜狗都有可浏览的短语面板（见 00-research.md §6）。
+    ///
+    /// 设计取舍：
+    ///   · 长文本必须能看清 → 用多行文本 + 左对齐，不是候选条那种单行截断
+    ///   · 518 条必须可筛 → 顶部按简码首字母分类，避免无限滚动
+    ///   · 点一下直接上屏 → 短语的价值就在省手打，不做二次确认
+    private func makePhrasePad() -> UIView {
+        let container = UIView()
+
+        let all = HotwordsStore.shared.items
+        guard !all.isEmpty else {
+            // 空库要说清怎么办，不能只给一片黑（用户原话「全是黑的啥也没有」）
+            let tip = UILabel()
+            tip.text = "还没有短语\n在 PhraseKey App 里添加，或用 Scripts/phrase.py 批量导入"
+            tip.numberOfLines = 0
+            tip.textAlignment = .center
+            tip.font = .systemFont(ofSize: 13)
+            tip.textColor = Palette.composeText
+            container.addSubview(tip)
+            tip.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                tip.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                tip.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                tip.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: 16),
+                tip.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -16),
+            ])
+            return container
+        }
+
+        // ── 分类条 ──
+        let catScroll = UIScrollView()
+        catScroll.showsHorizontalScrollIndicator = false
+        let catStack = UIStackView()
+        catStack.axis = .horizontal
+        catStack.spacing = 6
+        catStack.translatesAutoresizingMaskIntoConstraints = false
+        catScroll.addSubview(catStack)
+        catScroll.translatesAutoresizingMaskIntoConstraints = false
+
+        for cat in phraseCategories(all) {
+            let b = UIButton(type: .system)
+            b.setTitle(cat.isEmpty ? "全部" : cat.uppercased(), for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+            let selected = (phraseCategory ?? "") == cat
+            b.setTitleColor(selected ? Palette.accent : Palette.foreground, for: .normal)
+            b.backgroundColor = selected ? Palette.keyBackground : Palette.fnKeyBackground
+            b.layer.cornerRadius = 6
+            b.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
+            b.accessibilityHint = cat
+            b.addTarget(self, action: #selector(phraseCategoryTapped(_:)), for: .touchUpInside)
+            catStack.addArrangedSubview(b)
+        }
+
+        // ── 短语列表 ──
+        let listScroll = UIScrollView()
+        let listStack = UIStackView()
+        listStack.axis = .vertical
+        listStack.spacing = 4
+        listStack.translatesAutoresizingMaskIntoConstraints = false
+        listScroll.addSubview(listStack)
+        listScroll.translatesAutoresizingMaskIntoConstraints = false
+
+        let shown = all.filter { hw in
+            guard let c = phraseCategory, !c.isEmpty else { return true }
+            return hw.key.lowercased().hasPrefix(c)
+        }
+        for (i, hw) in shown.enumerated() {
+            let b = UIButton(type: .system)
+            // 简码 + 文本首行，长文本截断但给出足够信息判断是哪条
+            let head = hw.key.isEmpty ? "" : "\(hw.key.uppercased())  "
+            let oneLine = hw.text.replacingOccurrences(of: "\n", with: " ")
+            b.setTitle(head + oneLine, for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 14)
+            b.titleLabel?.lineBreakMode = .byTruncatingTail
+            b.contentHorizontalAlignment = .left
+            b.setTitleColor(Palette.foreground, for: .normal)
+            b.backgroundColor = Palette.keyBackground
+            b.layer.cornerRadius = 6
+            b.contentEdgeInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+            b.tag = i
+            b.accessibilityValue = hw.text      // 上屏取这里，避免用被截断的 title
+            b.addTarget(self, action: #selector(phraseTapped(_:)), for: .touchUpInside)
+            listStack.addArrangedSubview(b)
+            b.heightAnchor.constraint(equalToConstant: 38).isActive = true
+        }
+
+        container.addSubview(catScroll)
+        container.addSubview(listScroll)
+        NSLayoutConstraint.activate([
+            catScroll.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+            catScroll.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 6),
+            catScroll.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -6),
+            catScroll.heightAnchor.constraint(equalToConstant: 30),
+            catStack.topAnchor.constraint(equalTo: catScroll.topAnchor),
+            catStack.bottomAnchor.constraint(equalTo: catScroll.bottomAnchor),
+            catStack.leadingAnchor.constraint(equalTo: catScroll.leadingAnchor),
+            catStack.trailingAnchor.constraint(equalTo: catScroll.trailingAnchor),
+
+            listScroll.topAnchor.constraint(equalTo: catScroll.bottomAnchor, constant: 4),
+            listScroll.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 6),
+            listScroll.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -6),
+            listScroll.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            listStack.topAnchor.constraint(equalTo: listScroll.topAnchor),
+            listStack.bottomAnchor.constraint(equalTo: listScroll.bottomAnchor),
+            listStack.leadingAnchor.constraint(equalTo: listScroll.leadingAnchor),
+            listStack.trailingAnchor.constraint(equalTo: listScroll.trailingAnchor),
+            listStack.widthAnchor.constraint(equalTo: listScroll.widthAnchor),
+        ])
+        return container
+    }
+
+    /// 分类 = 简码首字母。518 条无限滚动找不到东西，按首字母分组最直观
+    /// （用户的简码本来就是按内容首字母取的，如 wmd/wrd 都是「我…」开头）。
+    private func phraseCategories(_ all: [Hotword]) -> [String] {
+        var set = Set<String>()
+        for hw in all {
+            if let f = hw.key.lowercased().first, f.isLetter { set.insert(String(f)) }
+        }
+        return [""] + set.sorted()
+    }
+
+    @objc private func phraseCategoryTapped(_ sender: UIButton) {
+        let c = sender.accessibilityHint ?? ""
+        phraseCategory = c.isEmpty ? nil : c
+        rebuildKeys()
+    }
+
+    @objc private func phraseTapped(_ sender: UIButton) {
+        guard let text = sender.accessibilityValue, !text.isEmpty else { return }
+        textDocumentProxy.insertText(text)
+        // 上屏后退出面板：短语通常是一次性长文本，插完就该回到打字状态
+        isPhrasePad = false
+        rebuildKeys()
+        renderCandidates()
     }
 
     // MARK: - 候选与拼音显示
