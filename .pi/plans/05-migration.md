@@ -125,3 +125,49 @@ B 的每一步都是：搬一个组件 → 构建 → 装机 → 你实测 → �
 
 ## 变更日志
 - 2026-08-24 创建。核算迁移代价，选定按需移植路线。
+
+
+---
+
+## 8. 鼠须管 / 同文评估（2026-08-24，用户提议）
+
+用户问「鼠须管或者同文呢」。先查平台 —— 这是决定性判据：
+
+| 项目 | 星 | 语言 | 平台 | 对本项目 |
+|---|---|---|---|---|
+| `rime/squirrel` 鼠须管 | 6278★ | Swift | **macOS 专属**（`DTPlatformName = macosx`） | 只能用于 macOS 端 |
+| `osfans/trime` 同文 | 4584★ | **Kotlin** | **Android 专属** | ❌ 完全不可用 |
+| `imfuxiao/Hamster` 仓 | 1621★ | Swift | iOS | 唯一可用于 iOS |
+
+**结论：用户当前焦点在 iPhone，鼠须管与同文都不适用。**
+- 同文是 Kotlin/Android，一行代码都搬不过来
+- 鼠须管是 macOS IMK，与 iOS 键盘扩展是两套完全不同的 API
+
+→ iOS 端仍只有 Hamster 一个可参考标杆（这也印证 §8 那次调研方向修正是对的）。
+
+### 但鼠须管对 macOS 端有价值（且价值很大）
+
+已克隆 `/tmp/squirrel_ref`。规模对比揭示了「看起来不成熟」的直接原因：
+
+| 组件 | 鼠须管 | 我们 |
+|---|---|---|
+| 候选面板 | `SquirrelView.swift` 756 行 + `SquirrelPanel.swift` 566 行 = **1322 行** | `CandidatePanel.swift` **194 行** |
+| 主题/样式 | `SquirrelTheme.swift` 364 行 | 无独立主题层 |
+| 输入控制器 | `SquirrelInputController.swift` 642 行 | `Controller.swift` |
+| 全部 Swift | **3605 行** | — |
+
+鼠须管**整体只 3605 行**（比 Hamster 的 28402 行精简得多），且是纯 macOS IMK，
+与我们 macOS 端同构 —— 移植难度远低于 Hamster→iOS。
+
+它已经是本项目的对照标本：`28aa050` 那次修 IMK 注册（输入法从未被系统注册）
+就是拿本机 `/Library/Input Methods/Squirrel.app` 的 Info.plist 做对照才定位到的。
+
+### 决策：分平台选标杆
+
+| 平台 | 标杆 | 理由 |
+|---|---|---|
+| **iOS**（当前焦点） | Hamster | 唯一 iOS 键盘扩展标杆 |
+| **macOS**（暂缓） | **鼠须管** | 同构、精简、已验证可作对照标本 |
+
+macOS 端暂不动 —— 用户明确当前优先手机（见 03-plan.md 优先级失误记录）。
+待 iOS 稳定后再用鼠须管改造 macOS 候选面板。
