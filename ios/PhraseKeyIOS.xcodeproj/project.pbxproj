@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		08C4BF84DC6C10DB5F7F9163 /* HotwordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40A2B785186144F767B6BC2 /* HotwordsStore.swift */; };
 		09D4E14FD4457D1709AA3B15 /* hanzi_pinyin.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */; };
+		AA11BB22CC33DD44EE550002 /* phrases_builtin.json in Resources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE550001 /* phrases_builtin.json */; };
 		0AD883660199E8ACF8D4DE88 /* dict_mobile.tsv in Resources */ = {isa = PBXBuildFile; fileRef = CE2120AF2EC2E8CFB9EEC4C3 /* dict_mobile.tsv */; };
 		1581950ED7CF26CA0E8BAE04 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94EBDCCF377F2D3507E7097C /* KeyboardViewController.swift */; };
 		1B5524B9B2C81D74DC6730AF /* PhraseKeySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A7CDED17C00832BB6BB555 /* PhraseKeySettings.swift */; };
@@ -87,6 +88,7 @@
 		C9DDCF4BBFF21A80BB7A2A93 /* FlypyCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlypyCodec.swift; sourceTree = "<group>"; };
 		CA70CC7277051F72C24D1BA9 /* Searcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Searcher.swift; sourceTree = "<group>"; };
 		CE2120AF2EC2E8CFB9EEC4C3 /* dict_mobile.tsv */ = {isa = PBXFileReference; path = dict_mobile.tsv; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550001 /* phrases_builtin.json */ = {isa = PBXFileReference; path = phrases_builtin.json; sourceTree = "<group>"; };
 		CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */ = {isa = PBXFileReference; path = hanzi_pinyin.tsv; sourceTree = "<group>"; };
 		D46D5560A4780A3232E2B1F3 /* PhraseKeyKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PhraseKeyKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E59746F0D51D25090AE107C5 /* PhraseKeyKeyboardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PhraseKeyKeyboardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -207,6 +209,7 @@
 			isa = PBXGroup;
 			children = (
 				CE2120AF2EC2E8CFB9EEC4C3 /* dict_mobile.tsv */,
+				AA11BB22CC33DD44EE550001 /* phrases_builtin.json */,
 				FBCBA1218B7F091DAC1DC45B /* dict.tsv */,
 				CF689E659A0E332AD912315D /* hanzi_pinyin.tsv */,
 			);
@@ -332,6 +335,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				48548C3EF688FD2CEC7ACC15 /* PhraseKey.svg in Resources */,
+				AA11BB22CC33DD44EE550002 /* phrases_builtin.json in Resources */,
 				4DC918EFAA544D31E31368A1 /* dict.tsv in Resources */,
 				92701B24453B64B28D11FCC1 /* hanzi_pinyin.tsv in Resources */,
 			);

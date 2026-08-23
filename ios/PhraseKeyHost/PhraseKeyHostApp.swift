@@ -120,7 +120,31 @@ struct HomeView: View {
     }
 
     private func refresh() {
+        seedBuiltinPhrasesIfNeeded()
         hotwords = HotwordsStore.shared.items
+    }
+
+    /// 首次启动把内置常用语灌入 App Group（仅当库为空时）。
+    ///
+    /// 为何需要它：常用语是本项目的核心卖点，但 iOS 端装完是**空库** ——
+    ///   用户要么手动一条条加（518 条不可能），要么核心功能永远用不上。
+    ///   → 把 macOS 侧已积累的常用语随包内置，首次启动自动灌入。
+    ///
+    /// 为何用 JSON 而不是 TSV（已实测）：109/518 条常用语**含换行**，
+    ///   导出 TSV 会被换行截断（518 条变 2896 行）。JSON 才能完整携带。
+    ///
+    /// 只在库为空时灌：用户自己增删过之后不再干扰，不会把他删掉的又塞回来。
+    private func seedBuiltinPhrasesIfNeeded() {
+        let store = HotwordsStore.shared
+        guard store.items.isEmpty,
+              let url = Bundle.main.url(forResource: "phrases_builtin", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let list = try? JSONDecoder().decode([Hotword].self, from: data),
+              !list.isEmpty
+        else { return }
+        for hw in list {
+            store.add(text: hw.text, key: hw.key)
+        }
     }
 
     private func delete(at offsets: IndexSet) {
