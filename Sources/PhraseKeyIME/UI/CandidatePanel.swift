@@ -40,6 +40,8 @@ final class CandidateBarView: NSView {
     var selectedIndex = 0
 
     static let cellHeight: CGFloat = 36
+    /// 预编辑区高度（仅在有拼音串时占位）
+    static let preeditHeight: CGFloat = 20
     static let cellPaddingX: CGFloat = 14
     static let cellMaxWidth: CGFloat = 200    // 单个候选最大宽度，长文本截断
     static let cornerRadius: CGFloat = 12
@@ -51,10 +53,15 @@ final class CandidateBarView: NSView {
     private(set) var windowStart = 0
     /// 是否还有上一页/下一页。学鼠须管 SquirrelView.canPageUp/canPageDown。
     /// 缺它的后果：候选超过 10 个时用户不知道还有，等于翻页功能不可发现。
+    /// 预编辑区：当前已输入的拼音串（学鼠须管 SquirrelView.preeditRange）。
+    /// 缺它的后果：用户打字时面板上看不到自己输了什么，
+    /// 双拼尤其致命 —— 打错一个字母整个音节就变了，没有回显无法自查。
+    var preedit = ""
     private(set) var canPageUp = false
     private(set) var canPageDown = false
 
-    func configure(candidates: [(String, String)], selected: Int) {
+    func configure(candidates: [(String, String)], selected: Int, preedit: String = "") {
+        self.preedit = preedit
         // 坑（已定性）：原为 `prefix(maxVisible)` 硬截前 10 个 —— 翻页后
         //   第 11 个以后的候选**永远画不出来**，等于翻页功能形同虚设。
         // 改为按 selected 滑动窗口：选中项总在可视范围内。
@@ -69,7 +76,7 @@ final class CandidateBarView: NSView {
         self.candidates = start < end ? Array(candidates[start..<end]) : []
         self.selectedIndex = sel - start
         needsDisplay = true
-        frame = NSRect(x: 0, y: 0, width: Self.width(for: self.candidates), height: Self.cellHeight)
+        frame = NSRect(x: 0, y: 0, width: Self.width(for: self.candidates), height: Self.totalHeight(preedit: preedit))
     }
 
     /// 长文本截断显示（末尾加 …）
@@ -85,6 +92,11 @@ final class CandidateBarView: NSView {
             result = test
         }
         return result + ellipsis
+    }
+
+    /// 面板总高 = 候选行 + （有拼音串时）预编辑行
+    static func totalHeight(preedit: String) -> CGFloat {
+        preedit.isEmpty ? cellHeight : cellHeight + preeditHeight
     }
 
     static func width(for cands: [(String, String)]) -> CGFloat {
@@ -114,6 +126,8 @@ final class CandidateBarView: NSView {
         }
         bg.lineWidth = 1
         bg.stroke()
+
+        drawPreedit()
 
         // Draw each candidate
         var x: CGFloat = 8
@@ -162,6 +176,26 @@ final class CandidateBarView: NSView {
         drawPager(x: x, height: h)
     }
 
+    /// 预编辑区：面板顶部回显已输入的拼音串（学鼠须管 preeditRange）。
+    /// 双拼用户尤其需要 —— 打错一个字母整个音节就变了，
+    /// 没有回显根本没法自查是手误还是词库没词。
+    private func drawPreedit() {
+        guard !preedit.isEmpty else { return }
+        let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+        let s = NSAttributedString(string: preedit,
+            attributes: [.font: font, .foregroundColor: GBoardTheme.sub])
+        s.draw(at: NSPoint(x: 12, y: bounds.maxY - Self.preeditHeight + 4))
+
+        let line = NSBezierPath()
+        let ly = bounds.maxY - Self.preeditHeight
+        line.move(to: NSPoint(x: 8, y: ly))
+        line.line(to: NSPoint(x: bounds.maxX - 8, y: ly))
+        (GBoardTheme.isDark ? NSColor.white.withAlphaComponent(0.10)
+                            : NSColor.black.withAlphaComponent(0.07)).setStroke()
+        line.lineWidth = 1
+        line.stroke()
+    }
+
     /// 右侧翻页指示 ▲▼（学鼠须管 SquirrelView 的 upPath/downPath）。
     /// 可用时用 accent 色，不可用时不画 —— 用户一眼知道能不能翻。
     private func drawPager(x: CGFloat, height h: CGFloat) {
@@ -204,11 +238,11 @@ final class CandidatePanel: NSPanel {
     var windowStart: Int { barView.windowStart }
 
     /// Update and show candidates.
-    func update(candidates: [(String, String)], selected: Int, at screenPoint: NSPoint) {
+    func update(candidates: [(String, String)], selected: Int, at screenPoint: NSPoint, preedit: String = "") {
         guard !candidates.isEmpty else { hide(); return }
-        barView.configure(candidates: candidates, selected: selected)
+        barView.configure(candidates: candidates, selected: selected, preedit: preedit)
         let w = barView.frame.width
-        let h = CandidateBarView.cellHeight
+        let h = CandidateBarView.totalHeight(preedit: preedit)
         // Position: default below cursor, move up if off-screen
         var origin = NSPoint(x: screenPoint.x, y: screenPoint.y - h - 6)
         if let screen = NSScreen.main {

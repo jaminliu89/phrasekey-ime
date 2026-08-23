@@ -133,7 +133,7 @@ final class PhraseKeyController: IMKInputController {
     private func refreshPanelOnly() {
         guard !candidates.isEmpty else { return }
         let list = candidates.map { ($0.text, $0.type) }
-        panel.update(candidates: list, selected: selected, at: insertionPoint())
+        panel.update(candidates: list, selected: selected, at: insertionPoint(), preedit: composing)
     }
 
     private func refresh() {
@@ -144,7 +144,7 @@ final class PhraseKeyController: IMKInputController {
             return
         }
         let list = candidates.map { ($0.text, $0.type) }
-        panel.update(candidates: list, selected: 0, at: insertionPoint())
+        panel.update(candidates: list, selected: 0, at: insertionPoint(), preedit: composing)
     }
 
     private func commitSelected(_ client: IMKTextInput) {
