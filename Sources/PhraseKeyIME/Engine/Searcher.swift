@@ -104,7 +104,7 @@ final class Searcher {
                 } else {
                     candCode = e.pinyin.replacingOccurrences(of: " ", with: "")
                 }
-                let baseScore = (candCode == norm) ? 2000 : 1000
+                let baseScore = (candCode == norm) ? 4000 : 1000
                 // 主信号 = 覆盖度；freq 已下沉为 sorted 里的 tiebreak。
                 let cover = coverBonus(candidateCode: candCode, input: norm)
                 out.append(Candidate(text: e.word, type: "word", score: baseScore + cover, hotword: nil, pinyin: e.pinyin, freq: e.freq))
