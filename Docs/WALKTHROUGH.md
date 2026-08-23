@@ -143,3 +143,85 @@ HEAD ffed498 · main 分支 · 引擎回归全绿（bench_engine.sh 全部通过
 - Step 2：加候选栏 UI（不加按键）→ 看渲染
 - Step 3：加按键（不加 App Group）→ 看交互
 - Step 4：加 App Group → 看数据共享
+
+---
+
+## 第 5 轮 · v0.3 收尾：iOS 视觉对齐 + 分号窗口下标 + 配置补全
+> 状态：已完成 · commit 554f31f · 2026-08-23
+
+### 做了什么
+
+**iOS 候选栏视觉对齐**
+- 去掉橙色 accent，改用字重（semibold）区分常用语
+- 短语面板分类按钮选中态改用 foreground + semibold，不用橙色
+- 对齐 Mac 端 PhraseKeyTheme 灰度字重体系
+
+**分号/引号选词窗口下标修复**
+- Mac 端：`;` / `'` 选词使用 `panel.windowStart` 计算实际下标
+- 翻页后按分号选的是当前页面的第 2/3 个，不是全局的
+- 与数字键选词逻辑对齐
+
+**自动展开配置补全**
+- 新增 `autoExpandTrigger`（默认 "space"，预留 enter/tab/custom）
+- 新增 `autoExpandKeepTrigger`（默认 false，展开后是否保留空格）
+- 两端同步实现
+
+### 改动文件
+- `ios/PhraseKeyKeyboard/KeyboardViewController.swift` — 视觉 + 字重
+- `Sources/PhraseKeyIME/Controller.swift` — 窗口下标修复
+- `Sources/PhraseKeyIME/Settings/PhraseKeySettings.swift` — 配置项扩展
+- `ios/PhraseKeyKeyboard/MobileEngine.swift` — keepTrigger 实现
+
+### 验证结果
+- ✅ swift build 通过
+- ✅ 引擎回归全绿
+
+---
+
+## 第 6 轮 · v0.4 Mac 设置面板可视化补全
+> 状态：已完成 · commit 554f31f · 2026-08-23
+
+### 做了什么
+- 常用语导出按钮（JSON 格式，pretty-printed + sorted keys）
+- 自动展开开关（Auto-expand phrases on space）
+- 保留触发字符开关（Keep space after expansion）
+- SettingsWindow 从「半壳」变成完整可用的设置界面
+
+### 改动文件
+- `Sources/PhraseKeyIME/Settings/SettingsWindow.swift` — +33/-0 行
+
+### 验证结果
+- ✅ swift build 通过
+- ⚠️ UI 交互待用户实测
+
+---
+
+## 当前总进度
+
+### v0.3 （5 项）
+- ✅ 双拼分号/引号选词
+- ✅ 候选栏视觉重做（灰度字重）
+- ✅ iOS 键盘存活稳定性（代码已修，待真机验证）
+- ✅ 常用语自动展开（空格触发）
+- ✅ iOS 键盘 UI 规范对齐
+
+### v0.4 （6 项，部分完成）
+- ✅ Mac 设置面板可视化（方案切换 + 自动展开 + 导入导出）
+- ✅ Mac 常用语管理面板（增删改查 + 搜索 + 导入导出）
+- ✅ iOS 宿主 App 常用语管理（增删改 + 搜索 + 内置种子）
+- ⬜ App Group 数据共享闭环验证（代码通路已建，未实测）
+- ⬜ 用户自学习机制 iOS 端适配
+- ⬜ 常用语管理面板搜索优化（仅简单过滤，无权重排序）
+
+### v0.5 （5 项，未启动）
+- ⬜ 多种双拼方案（自然码 / 微软双拼 / 紫光双拼）
+- ⬜ 模糊拼音
+- ⬜ 形码过滤完善
+- ⬜ iOS 设置界面
+- ⬜ 候选排序可配置化
+
+### v1.0 （4 项，未启动）
+- ⬜ 官网 / 介绍页
+- ⬜ 使用文档
+- ⬜ 安装体验优化
+- ⬜ 性能优化 + 全量回归测试
