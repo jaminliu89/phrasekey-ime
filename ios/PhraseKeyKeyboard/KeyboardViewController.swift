@@ -184,17 +184,29 @@ final class KeyboardViewController: UIInputViewController {
             candidateStack.heightAnchor.constraint(equalTo: candidateScroll.frameLayoutGuide.heightAnchor),
         ])
 
-        // 拼音行与候选行必须上下分层：若并排放在同一横向 stack，
-        // composeLabel 的抗压缩优先级会把候选区挤到几乎没有宽度
-        // （表现：候选放不下、无法连续选词，像"单手键盘"）。
-        let composeRow = UIStackView(arrangedSubviews: [composeLabel, UIView()])
+        // 拼音行：左边 logo 按钮 + 拼音串
+        let logo = UIButton(type: .system)
+        logo.setTitle("P", for: .normal)
+        logo.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        logo.setTitleColor(Palette.foreground, for: .normal)
+        logo.layer.cornerRadius = 4
+        logo.layer.borderWidth = 1.5
+        logo.layer.borderColor = Palette.foreground.cgColor
+        logo.addTarget(self, action: #selector(logoTapped), for: .touchUpInside)
+        logo.widthAnchor.constraint(equalToConstant: 22).isActive = true
+        logo.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        logoButton = logo
+
+        let composeRow = UIStackView(arrangedSubviews: [logo, composeLabel, UIView()])
         composeRow.axis = .horizontal
+        composeRow.spacing = 8
         composeRow.isLayoutMarginsRelativeArrangement = true
         composeRow.layoutMargins = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
 
         let topBar = UIStackView(arrangedSubviews: [composeRow, candidateScroll])
         topBar.axis = .vertical
         topBar.spacing = 2
+        candidateScrollView = candidateScroll
 
         // ── 按键区 ──
         rowsStack.axis = .vertical
@@ -363,7 +375,102 @@ final class KeyboardViewController: UIInputViewController {
         bottom.heightAnchor.constraint(equalToConstant: Metric.bottomHeight).isActive = true
     }
 
-    // MARK: - 短语面板（项目核心卖点的可见入口）
+    // MARK: - 顶部工具栏 & 快捷面板
+
+    /// 快捷面板开关状态：true = 面板展开，false = 正常候选栏
+    private var quickPanelOpen = false
+
+    /// 快捷面板按钮（键盘左上角 logo 位）
+    private var logoButton: UIButton?
+
+    /// 快捷面板容器（替代 candidateScroll 的位置）
+    private var quickPanelView: UIView?
+
+    /// 候选栏滚动视图（用于显隐切换）
+    private var candidateScrollView: UIScrollView?
+
+    // MARK: - 快捷面板交互
+
+    @objc private func logoTapped() {
+        quickPanelOpen.toggle()
+        toggleQuickPanel(open: quickPanelOpen)
+    }
+
+    private func toggleQuickPanel(open: Bool) {
+        guard let scrollView = candidateScrollView,
+              let superview = scrollView.superview else { return }
+
+        if open {
+            let panel = makeQuickPanel()
+            panel.translatesAutoresizingMaskIntoConstraints = false
+            superview.insertSubview(panel, belowSubview: scrollView)
+            quickPanelView = panel
+            NSLayoutConstraint.activate([
+                panel.topAnchor.constraint(equalTo: scrollView.topAnchor),
+                panel.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+                panel.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+                panel.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            ])
+            scrollView.isHidden = true
+        } else {
+            quickPanelView?.removeFromSuperview()
+            quickPanelView = nil
+            scrollView.isHidden = false
+        }
+    }
+
+    private func makeQuickPanel() -> UIView {
+        let panel = UIView()
+        panel.backgroundColor = Palette.keyBackground
+
+        let phrasesBtn = makeQuickButton(title: "常用语", subtitle: "快捷短语与模板")
+        phrasesBtn.addTarget(self, action: #selector(quickPhrasesTapped), for: .touchUpInside)
+
+        let settingsBtn = makeQuickButton(title: "设置", subtitle: "方案 / 主题")
+        settingsBtn.addTarget(self, action: #selector(quickSettingsTapped), for: .touchUpInside)
+
+        let row = UIStackView(arrangedSubviews: [phrasesBtn, settingsBtn])
+        row.axis = .horizontal
+        row.spacing = 8
+        row.distribution = .fillEqually
+        row.translatesAutoresizingMaskIntoConstraints = false
+        panel.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.topAnchor.constraint(equalTo: panel.topAnchor, constant: 6),
+            row.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            row.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
+            row.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -6),
+        ])
+        return panel
+    }
+
+    private func makeQuickButton(title: String, subtitle: String) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.setTitleColor(Palette.foreground, for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        btn.backgroundColor = Palette.fnKeyBackground
+        btn.layer.cornerRadius = 6
+        return btn
+    }
+
+    @objc private func quickPhrasesTapped() {
+        quickPanelOpen = false
+        toggleQuickPanel(open: false)
+        isPhrasePad = true
+        rebuildKeys()
+    }
+
+    @objc private func quickSettingsTapped() {
+        let next: InputScheme = scheme == .flypy ? .pinyin : .flypy
+        scheme = next
+        schemeButton?.setTitle(schemeShort(), for: .normal)
+        UserDefaults.standard.set(scheme.rawValue, forKey: "scheme")
+        quickPanelOpen = false
+        toggleQuickPanel(open: false)
+        inputBuffer = ""
+        renderCandidates()
+    }
 
     /// 短语面板显示类型：全部 / 短常用语 / 长文本
     /// 长文本不参与正常打字候选，只能在面板里手动选择，避免误触。

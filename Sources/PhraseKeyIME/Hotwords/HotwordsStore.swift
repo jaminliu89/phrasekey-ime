@@ -150,9 +150,11 @@ final class HotwordsStore {
     // MARK: - Search
 
     enum SearchType {
-        case key      // 简码精确（用户打了某常用语 key）
-        case initials // 文本拼音首字母
-        case contains // 文本子串
+        case key        // 简码精确（用户打了某常用语完整 key）
+        case keyPrefix  // 简码前缀（key 以输入开头，但不等于输入）
+        case pinyin     // 完整拼音前缀匹配（5-12 字中长短语，更精准）
+        case initials   // 拼音首字母（≤4 字短短语）
+        case contains   // 文本子串
     }
 
     /// 综合搜索常用语：返回 (type, hotword)。
@@ -167,6 +169,10 @@ final class HotwordsStore {
         /// 超过此长度的常用语**只能用自定义简码触发** —— 见 search 内注释。
         /// 4 字：覆盖「你好/我们/收到/好的」这类短语，又挡住话术类长句。
         static let maxPinyinMatchChars = 4
+        /// 参与「全拼前缀匹配」的常用语最大字数。
+        /// 比首字母匹配更长的短语（4-12 字）用完整拼音前缀也能找到，
+        /// 对齐微信输入法「前 N 字拼音联想」的体验。
+        static let maxFullPinyinMatchChars = 12
     }
 
     func search(_ input: String, scheme: InputScheme = .default) -> [(SearchType, Hotword)] {
@@ -179,11 +185,11 @@ final class HotwordsStore {
         }
         // 2. 简码前缀
         for hw in items where !hw.key.isEmpty && hw.key.lowercased().hasPrefix(norm) && hw.key.lowercased() != norm {
-            out.append((.key, hw))
+            out.append((.keyPrefix, hw))
         }
 
         if scheme.isFlypy {
-            // 3. 双拼编码前缀（如输入 nihc 命中「你好」开头）
+            // 3. 双拼编码前缀（短语，≤4 字）
             //
             // 坑（被回归拦下）：长文本常用语若也参与拼音前缀匹配，会**吃掉正常输入**。
             //   实例：种子里 kh2 →「我们开个会同步一下」，其文本双拼码以 womf 开头，
@@ -196,13 +202,28 @@ final class HotwordsStore {
                               && hw.flypy.hasPrefix(norm) {
                 out.append((.initials, hw))
             }
+            // 4. 双拼编码前缀（中长短语，5-12 字）
+            // 对齐微信输入法「前 N 字拼音联想」：5-12 字的常用语，
+            // 打前几个字的双拼编码也能联想出来。
+            for hw in items where hw.text.count > Limits.maxPinyinMatchChars
+                              && hw.text.count <= Limits.maxFullPinyinMatchChars
+                              && hw.flypy.hasPrefix(norm) {
+                out.append((.pinyin, hw))
+            }
         } else {
-            // 3. 文本拼音首字母（同上：只短文本参与，防长话术吃掉正常输入）
+            // 3. 文本拼音首字母（≤4字短语）
             for hw in items where hw.text.count <= Limits.maxPinyinMatchChars
                               && hw.initials.hasPrefix(norm) {
                 out.append((.initials, hw))
             }
-            // 4. 文本子串（兜底）—— 需 ≥2 字符，避免单字母命中一大堆
+            // 4. 全拼前缀（中长短语，5-12 字）
+            // 对齐微信输入法「前 N 字拼音联想」
+            for hw in items where hw.text.count > Limits.maxPinyinMatchChars
+                              && hw.text.count <= Limits.maxFullPinyinMatchChars
+                              && hw.pinyin.replacingOccurrences(of: " ", with: "").hasPrefix(norm) {
+                out.append((.pinyin, hw))
+            }
+            // 5. 文本子串（兜底）—— 需 ≥2 字符，避免单字母命中一大堆
             for hw in items where norm.count >= 2
                               && hw.text.localizedCaseInsensitiveContains(norm) {
                 out.append((.contains, hw))

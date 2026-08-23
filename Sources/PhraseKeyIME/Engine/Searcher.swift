@@ -83,14 +83,16 @@ final class Searcher {
         let isAlphabetic = norm.unicodeScalars.allSatisfy { CharacterSet.lowercaseLetters.contains($0) }
 
         if isAlphabetic {
-            // 常用语优先（长文本只保留 key 精确匹配，initials/contains 模糊匹配排除，
+            // 常用语优先（长文本只保留 key 精确匹配，前缀/initials/contains 模糊匹配排除，
             //   避免打字时随便两个字母就蹦出长文章）
             for (type, hw) in HotwordsStore.shared.search(norm, scheme: scheme) {
                 if hw.isLongText && type != .key { continue }
                 let score: Int
                 switch type {
                 case .key: score = 10000
-                case .initials: score = 3000
+                case .keyPrefix: score = 3500
+                case .initials: score = 2500
+                case .pinyin: score = 1500
                 case .contains: score = 100
                 }
                 out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw, pinyin: "", freq: 0))
@@ -119,8 +121,18 @@ final class Searcher {
             // 直接输入中文（如粘贴）：按子串找常用语
             for (type, hw) in HotwordsStore.shared.search(norm, scheme: scheme) {
                 if hw.isLongText && type != .key { continue }
-                let score = type == .contains ? 1000 : 2000
-                out.append(Candidate(text: hw.text, type: "hotword", score: score, hotword: hw, pinyin: "", freq: 0))
+                switch type {
+                case .key:
+                    out.append(Candidate(text: hw.text, type: "hotword", score: 2000, hotword: hw, pinyin: "", freq: 0))
+                case .keyPrefix:
+                    out.append(Candidate(text: hw.text, type: "hotword", score: 1500, hotword: hw, pinyin: "", freq: 0))
+                case .initials:
+                    break
+                case .pinyin:
+                    out.append(Candidate(text: hw.text, type: "hotword", score: 1200, hotword: hw, pinyin: "", freq: 0))
+                case .contains:
+                    out.append(Candidate(text: hw.text, type: "hotword", score: 1000, hotword: hw, pinyin: "", freq: 0))
+                }
             }
         }
 
