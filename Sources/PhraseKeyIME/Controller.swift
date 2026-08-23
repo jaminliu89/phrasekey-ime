@@ -102,6 +102,30 @@ final class PhraseKeyController: IMKInputController {
                 refreshPanelOnly()
             }
             return true
+        case ";":                 // 双拼分号选词：选第 2 个候选
+            if AppSettings.current.scheme.isFlypy && candidates.count >= 2 {
+                commitCandidate(at: 1, textInput)
+                return true
+            }
+            // 非双拼或候选不足 → 先提交拼音再放行标点
+            if !composing.isEmpty {
+                textInput.insertText(composing, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+                reset()
+            }
+            return false
+        case "'":                 // 撇号：双拼选第 3 个 / 音节分隔符 / 直接上屏
+            if AppSettings.current.scheme.isFlypy && candidates.count >= 3 {
+                commitCandidate(at: 2, textInput)
+                return true
+            }
+            // 作为音节分隔符：计入拼音串（Searcher 层会剥离，但拼音栏显示用户按了）
+            // 仅在已有输入时当分隔符；空串时直接上屏撇号
+            if !composing.isEmpty {
+                composing += "'"
+                refresh()
+                return true
+            }
+            return false // 空输入时放行给系统（英文上下文打 don't 等）
         default:
             if let n = Int(chars), (1...9).contains(n) {
                 // 数字键选词必须基于**当前可视窗口**，而非全局下标。

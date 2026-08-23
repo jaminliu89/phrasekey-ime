@@ -585,18 +585,39 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         // 非字母（数字/符号）直接上屏
-        // 例外：撇号 ' 是**音节分隔符**（RIME / 小鹤 / Gboard 事实标准），
-        //   在拼音上下文中必须进引擎而不是上屏。
-        // 坑（用户实测报告）：此前它走这条 guard 直接上屏 ——
-        //   用户想分隔，结果文档里多了个 ' ，拼音串不变。
-        // 仅当已在组词（composing 非空）时才当分隔符；
-        //   空串时按 ' 仍照常上屏（用户可能真想打英文缩写号 don't）。
-        let isSeparator = (raw == "'")
-        if isSeparator, let e = engine, !e.composing.isEmpty {
-            // 交给引擎：引擎层会剥离撇号（见 Searcher.search 注释），
-            // 这里只管把它计入组词串，使拼音栏能显示用户按了分隔。
-            e.append("'")
-            renderCandidates()
+        // 例外 1：分号 ; 是双拼模式下的选词键（选第 2 个）
+        // 例外 2：撇号 ' 是双拼选词键（选第 3 个）兼音节分隔符
+        // 优先级：选词 > 分隔 > 上屏
+        if raw == ";" {
+            if let e = engine, e.scheme.isFlypy, e.candidates.count >= 2,
+               let text = e.commit(at: 1) {
+                textDocumentProxy.insertText(text)
+                renderCandidates()
+                return
+            }
+            // 非双拼或候选不足 → 上屏分号
+            if let e = engine, !e.composing.isEmpty {
+                textDocumentProxy.insertText(e.commitRaw())
+            }
+            textDocumentProxy.insertText(";")
+            return
+        }
+
+        // 撇号 '：双拼下选第 3 个；候选不足时当音节分隔符；空串时直接上屏
+        if raw == "'" {
+            if let e = engine, e.scheme.isFlypy, e.candidates.count >= 3,
+               let text = e.commit(at: 2) {
+                textDocumentProxy.insertText(text)
+                renderCandidates()
+                return
+            }
+            if let e = engine, !e.composing.isEmpty {
+                // 作为音节分隔符：计入组词串（引擎层会剥离，但拼音栏显示）
+                e.append("'")
+                renderCandidates()
+                return
+            }
+            textDocumentProxy.insertText("'")
             return
         }
         guard raw.count == 1, raw.first!.isLetter else {
