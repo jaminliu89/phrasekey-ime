@@ -107,12 +107,19 @@ B 的每一步都是：搬一个组件 → 构建 → 装机 → 你实测 → �
 
 ---
 
-## 7. 待验证（还没有证据的部分）
+## 7. 待验证 → **已验证**（2026-08-24）
 
-- [ ] Hamster 的候选栏组件能否脱离它的 `KeyboardContext` 单独工作
-      （验证方法：把 `CandidatesPagingView` 拷进我们工程，看编译缺什么）
-- [ ] 它的 `CandidateSuggestion` 模型与我们 `Searcher.Result` 能否直接映射
-- [ ] 长按气泡是否依赖它的自研触摸系统 `KeyboardTouchView`（若是，成本会高）
+- [x] **候选栏可剥离**。它依赖 `RimeContext` + `KeyboardContext` 两个上下文，
+      但 `KeyboardContext` 本体只 **19 行**，且候选栏只用到其中 **5 个属性**：
+      `candidatesViewState` / `enableEmbeddedInputMode` / `hamsterConfiguration` /
+      `heightOfCodingArea` / `heightOfToolbar`。
+      `hamsterConfiguration`（879 行的大配置）只用了 `.toolbar` 一个字段
+      → 移植时用我们自己的轻配置替换即可。
+- [x] **`CandidateSuggestion` 可直接映射**：字段是 `index` / `label` / `text` /
+      `title` / `subtitle` / `isAutocomplete` / `isUnknown` / `additionalInfo`，
+      与我们 `Searcher.Result`（text / type / score）是子集关系，
+      `type == "hotword"` 可映射为 `subtitle` 或 `additionalInfo`。
+- [ ] 长按气泡是否依赖它的自研触摸系统 `KeyboardTouchView`（搬到那一步再验）
 
 ---
 
