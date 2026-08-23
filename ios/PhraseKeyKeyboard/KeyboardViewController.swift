@@ -1,5 +1,19 @@
 import UIKit
 
+/// 用颜色生成纯色图片（用于按钮按下高亮）
+extension UIImage {
+    static func imageWithColor(_ color: UIColor) -> UIImage {
+        let rect = CGRect(x: 0, y: 0, width: 1, height: 1)
+        UIGraphicsBeginImageContext(rect.size)
+        let context = UIGraphicsGetCurrentContext()
+        context?.setFillColor(color.cgColor)
+        context?.fill(rect)
+        let img = UIGraphicsGetImageFromCurrentImageContext() ?? UIImage()
+        UIGraphicsEndImageContext()
+        return img
+    }
+}
+
 /// iOS 键盘扩展主控制器。
 ///
 /// 布局铁律（经对照实验确认）：
@@ -103,6 +117,13 @@ final class KeyboardViewController: UIInputViewController {
             tc.userInterfaceStyle == .dark
                 ? UIColor(white: 0.85, alpha: 1)
                 : UIColor(white: 0.25, alpha: 1)
+        }
+
+        /// 次级信息（候选标号、辅助文字）：再弱一档
+        static let secondaryText = UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(white: 0.55, alpha: 1)
+                : UIColor(white: 0.55, alpha: 1)
         }
     }
 
@@ -246,7 +267,14 @@ final class KeyboardViewController: UIInputViewController {
         b.layer.shadowOffset = CGSize(width: 0, height: 1)
         b.layer.shadowRadius = 0
         b.layer.shadowOpacity = 1
+        // 按下高亮：通过 setBackgroundImage 模拟，比 adjustsImageWhenHighlighted 可控
+        let highlightColor = dark
+            ? Palette.fnKeyBackground.withAlphaComponent(0.5)
+            : Palette.keyBackground.withAlphaComponent(0.5)
+        b.setBackgroundImage(UIImage.imageWithColor(highlightColor), for: .highlighted)
         b.addTarget(self, action: #selector(keyPressed(_:)), for: .touchUpInside)
+        // 触觉反馈
+        b.addTarget(self, action: #selector(keyHaptic(_:)), for: .touchDown)
         if wide { b.setContentCompressionResistancePriority(.defaultLow, for: .horizontal) }
         return b
     }
@@ -316,6 +344,11 @@ final class KeyboardViewController: UIInputViewController {
                 // shift 选中态：按下时用字母键的亮色，未按用功能键暗色
                 b.backgroundColor = isShifted ? Palette.keyBackground : Palette.fnKeyBackground
                 shiftButton = b
+            }
+            if k == "⌫" {
+                // 删除键长按连续删（对齐系统键盘体验）
+                b.addTarget(self, action: #selector(backspaceDown(_:)), for: .touchDown)
+                b.addTarget(self, action: #selector(backspaceUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
             }
             // 用 tag 标记功能键，供下面筛字母键用。
             // 坑（已定性）：原实现靠 `backgroundColor == .white` 反推字母键 ——
@@ -688,12 +721,23 @@ final class KeyboardViewController: UIInputViewController {
         for (i, c) in engine.candidates.prefix(30).enumerated() {
             let b = UIButton(type: .system)
             let mark = c.type == "hotword" ? "⌘ " : ""
-            b.setTitle(mark + c.text, for: .normal)
-            // 常用语靠字重区分（semibold），不用彩色
+            // 数字标号 + 候选字（微信/Gboard 标准格式：「1 的」「2 地」）
+            // 标号比字小一号、灰色，视觉上是辅助信息不抢戏
+            let numberStr = "\(i+1) "
+            let textStr = mark + c.text
+            let full = NSMutableAttributedString(string: numberStr + textStr)
             let isHotword = c.type == "hotword"
-            b.setTitleColor(Palette.foreground, for: .normal)
-            b.titleLabel?.font = .systemFont(ofSize: 17, weight: isHotword ? Palette.accentWeight : (i == 0 ? .semibold : .regular))
-            b.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+            let textWeight: UIFont.Weight = isHotword ? Palette.accentWeight : (i == 0 ? .semibold : .regular)
+            full.addAttribute(.font, value: UIFont.systemFont(ofSize: 12, weight: .regular),
+                              range: NSRange(location: 0, length: numberStr.count))
+            full.addAttribute(.foregroundColor, value: Palette.secondaryText,
+                              range: NSRange(location: 0, length: numberStr.count))
+            full.addAttribute(.font, value: UIFont.systemFont(ofSize: 17, weight: textWeight),
+                              range: NSRange(location: numberStr.count, length: textStr.count))
+            full.addAttribute(.foregroundColor, value: Palette.foreground,
+                              range: NSRange(location: numberStr.count, length: textStr.count))
+            b.setAttributedTitle(full, for: .normal)
+            b.contentEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
             b.tag = i
             b.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)
             candidateStack.addArrangedSubview(b)
@@ -708,6 +752,17 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     // MARK: - 按键处理
+
+    // 触觉反馈：轻 impact，按键时轻震一下（对齐系统键盘触感）
+    private let impactGenerator = UIImpactFeedbackGenerator(style: .light)
+
+    @objc private func keyHaptic(_ sender: UIButton) {
+        impactGenerator.impactOccurred(intensity: 0.4)
+    }
+
+    // 删除键长按相关
+    private var backspaceTimer: Timer?
+    private var backspaceRepeatCount = 0
 
     @objc private func keyPressed(_ sender: UIButton) {
         guard let raw = sender.title(for: .normal) else { return }
@@ -800,11 +855,56 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func spacePressed() {
         guard let engine else {
-            textDocumentProxy.insertText(" ")
+            // 空输入状态下的双击空格 → 出句号（对齐微信/Gboard）
+            // 用 documentContextBeforeInput 判断前一个字符是不是空格
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            if before.hasSuffix(" ") {
+                textDocumentProxy.deleteBackward()
+                textDocumentProxy.insertText("。")
+            } else {
+                textDocumentProxy.insertText(" ")
+            }
             return
         }
         textDocumentProxy.insertText(engine.space())
         renderCandidates()
+    }
+
+    // MARK: - 删除键长按
+
+    @objc private func backspaceDown(_ sender: UIButton) {
+        backspaceRepeatCount = 0
+        // 第一次延迟 0.5 秒后开始连续删，之后越来越快
+        backspaceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            self?.startRepeatingBackspace()
+        }
+    }
+
+    @objc private func backspaceUp(_ sender: UIButton) {
+        backspaceTimer?.invalidate()
+        backspaceTimer = nil
+        backspaceRepeatCount = 0
+    }
+
+    private func startRepeatingBackspace() {
+        backspaceTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.backspaceRepeatCount += 1
+            if let engine = self.engine, !engine.composing.isEmpty {
+                engine.deleteLast()
+            } else {
+                self.textDocumentProxy.deleteBackward()
+            }
+            // 每删 5 个加速一次（最短 0.03s）
+            if self.backspaceRepeatCount % 5 == 0 {
+                self.backspaceTimer?.timeInterval = max(0.03, self.backspaceTimer!.timeInterval * 0.8)
+            }
+            self.renderCandidates()
+            // 触觉反馈（每 3 个震一次，不震太频繁）
+            if self.backspaceRepeatCount % 3 == 0 {
+                self.impactGenerator.impactOccurred(intensity: 0.3)
+            }
+        }
     }
 
     @objc private func returnPressed() {
@@ -812,8 +912,16 @@ final class KeyboardViewController: UIInputViewController {
             textDocumentProxy.insertText("\n")
             return
         }
-        let t = engine.commitRaw()
-        textDocumentProxy.insertText(t.isEmpty ? "\n" : t)
+        // 有候选：上屏首选（对齐微信/搜狗 —— 回车确认候选）
+        if !engine.candidates.isEmpty, let text = engine.commit(at: 0) {
+            textDocumentProxy.insertText(text)
+        } else if !engine.composing.isEmpty {
+            // 有拼音串无候选：上屏原始拼音
+            textDocumentProxy.insertText(engine.commitRaw())
+        } else {
+            // 空状态：直接换行
+            textDocumentProxy.insertText("\n")
+        }
         renderCandidates()
     }
 
