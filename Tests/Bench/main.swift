@@ -430,6 +430,64 @@ for (code, _) in sepCases {
 }
 print("  \(sepCases.count) 个分隔符用例 + 等价性检查完毕")
 
+// ── 整句切分：多字连打（用户实测报「不能多字连打」）────────────────
+// 坑（已定性）：原实现只会「拿整串查词典」，词典没这个组合就退化成最长前缀 ——
+//   wouivsgo（我是中国）只出「我是」，后半截 vsgo **被静默丢弃**。
+//   而用户实际姿势是「一口气打一句、空格上屏」，是所有成熟输入法的默认交互。
+//
+// 打分模型的关键教训（**已实测证伪**）：
+//   McBopomofo 的 log10(fscale^(字数-1) × freq) 在本项目词库上**完全无效**。
+//   路径分相加，词数多的路径凭空多加一项 log10(freq)（约 5 分），
+//   fscale 加权项在总字数相同时两边贡献几乎一致，抵不掉。
+//   实测 fscale 从 2.7 调到 1000，「我是中国」始终输给「我是+中+过」。
+//   → 结构性偏差，调参无解。改用显式「成词奖励」bonus=8（10 例 DP 实测定值）。
+//
+// 这 8 例覆盖 2+2 / 2+2+2 / 3 段等切分形态，改打分参数会被它们拦住。
+print("\n=== 整句切分（多字连打）===")
+let sentenceCases: [(String, String)] = [
+    ("wouivsgo", "我是中国"), ("nihcwomf", "你好我们"),
+    ("vidcwoyc", "知道我要"), ("ojqrdiyi", "安全第一"),
+    ("jbtmtmqi", "今天天气"), ("vsgorfmb", "中国人民"),
+    ("mktmkdhv", "明天开会"), ("xpxpni", "谢谢你"),
+]
+for (code, word) in sentenceCases {
+    let r = PinyinEngine.shared.query(code, scheme: .flypy)
+    if r.first?.word != word {
+        failures.append("整句切分 \(code) 首选应为 \(word)，实得 \(r.first?.word ?? "空")")
+    }
+}
+print("  \(sentenceCases.count) 个多字连打用例检查完毕")
+
+// 不回退保险：单个词的首选**不得**被整句切分抢占。
+// 切分只在整串查不到时启动，所以这些必须原样保持。
+for (code, word) in [("nihc", "你好"), ("womf", "我们"), ("vsgo", "中国"),
+                     ("woui", "我是"), ("ojqr", "安全"), ("zfme", "怎么")] {
+    let r = PinyinEngine.shared.query(code, scheme: .flypy)
+    if r.first?.word != word {
+        failures.append("单词首选被切分抢占：\(code) 应为 \(word)，实得 \(r.first?.word ?? "空")")
+    }
+}
+print("  6 个单词首选不被抢占检查完毕")
+
+// 性能：长串切分不得拖慢查询（O(n²) 风险）
+let longCode = "wouivsgorfmbjbtmtmqi"   // 20 键 = 10 字
+// 分段计时：定位耗时到底在哪一段（别猜）
+func timeSeg(_ label: String, _ body: () -> Void) -> Double {
+    let t = Date()
+    for _ in 0..<200 { body() }
+    let ms = Date().timeIntervalSince(t) / 200 * 1000
+    print(String(format: "    %@ %.3f ms", label.padding(toLength: 26, withPad: " ", startingAt: 0), ms))
+    return ms
+}
+_ = timeSeg("segmentSentence 单独", { _ = PinyinEngine.shared.segmentSentence(longCode, scheme: .flypy) })
+_ = timeSeg("searchFlypy 单独", { _ = PinyinEngine.shared.searchFlypy(longCode) })
+_ = timeSeg("searchFlypyProgressive", { _ = PinyinEngine.shared.searchFlypyProgressive(longCode) })
+_ = timeSeg("searchPinyin(整串)", { _ = PinyinEngine.shared.searchPinyin(longCode) })
+let segMs = timeSeg("query 全路径", { _ = PinyinEngine.shared.query(longCode, scheme: .flypy) })
+if segMs > 5 {
+    failures.append(String(format: "整句切分过慢：%.3f ms（上限 5ms）", segMs))
+}
+
 print("\n=== 结果 ===")
 if failures.isEmpty {
     print("全部通过 ✅")

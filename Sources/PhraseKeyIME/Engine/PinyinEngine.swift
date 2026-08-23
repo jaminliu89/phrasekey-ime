@@ -376,11 +376,48 @@ final class PinyinEngine {
             // 做法：双拼结果在前，全拼结果去重后追加在后。
             let plainPinyin = pinyinFallbackEntries(input)
 
+            // 整句切分（多字连打）：用户一口气打一句时，
+            // 整串查词典必然未命中（词典里没有「我是中国」这个词），
+            // 靠切分拼接。它自带长度/奇偶守卫，不适用时返回空。
+            let sentence = segmentSentence(input, scheme: scheme)
+
             if user.isEmpty && fp.isEmpty {
                 let decoded = FlypyCodec.decode(input).joined()
                 if let u = _userByPinyin[decoded] { return u + plainPinyin }
                 let py = searchPinyin(decoded)
                 if !py.isEmpty { return py + plainPinyin }
+
+                // 整句切分成功时**直接返回**，不走渐进兜底。
+                //
+                // 性能理由（实测定位，不是猜）：渐进兜底内部是 **byFlypy 全表扫描**
+                //   （`for (k,v) in byFlypy where k.hasPrefix(norm)`，十几万个键）。
+                //   分段计时（20 键 = 10 字）：
+                //     segmentSentence        0.011 ms
+                //     searchFlypyProgressive 7.647 ms  ← 占 93%
+                //   慢的不是新加的切分，是旧的性能债。此前没暴露是因为短输入
+                //   前缀命中多、400 条上限能早退；长输入命中少 → 退不了 → 扫完全表。
+                // 修法取舍：**不重构** searchFlypyProgressive（它功能正确，
+                //   短输入断档全靠它，改它风险大于收益），只在不需要时不调它。
+                //   切分不适用的输入（奇数长度 / 太短 / 超长）路径完全不变。
+                // 切分成功时，先拿切分结果，但**必须保留短词候选** ——
+                // 坑（实测被回归拦下）：初版直接 return dedupAppend(sentence, plainPinyin)，
+                //   把其他候选全砍了 —— womfzd（6 键）只剩「我们在」一条，
+                //   「我们」完全消失。用户正在打字中途时这是災难性的：
+                //   他可能只想选「我们」然后接着打，结果选不到。
+                // 修法：切分结果在前，但仍把渐进兜底追在后面。
+                //   仅当切分覆盖的字数 ≥ 3 时才跳过兜底（长串才有性能问题，
+                //   且长串下用户意图明确是整句）；短串仍走完整路径。
+                if !sentence.isEmpty {
+                    let sentenceChars = sentence[0].word.count
+                    if sentenceChars >= 4 {
+                        // 四字及以上：意图明确是整句，且此时兜底全表扫描最慢
+                        return dedupAppend(sentence, plainPinyin)
+                    }
+                    // 三字以下：仍跑兜底，保证短词候选不丢
+                    let prog = searchFlypyProgressive(input)
+                    return dedupAppend(dedupAppend(sentence, plainPinyin), prog)
+                }
+
                 // 双拼同样需要渐进式兜底：双拼每字定长 2 键，用户必然经过奇数长度，
                 // 此前无此回退 → 奇数位候选全空（实测 wourfg 6 步 5 空）。
                 let prog = searchFlypyProgressive(input)
@@ -395,7 +432,7 @@ final class PinyinEngine {
             }
             // 双拼精确命中：双拼结果在前，全拼去重后追加。
             // 但坑（实测）：输入 zhongguo（8 键）时 byFlypy 竟然命中 —— 它被当成
-                //   4 个双拼音节 zang/on/geng/shuo，产出 12 条生僻字（均 s1249）。
+            //   4 个双拼音节 zang/on/geng/shuo，产出 12 条生僻字（均 s1249）。
             //   全拼的「中国」追在后面会被埋掉 → 等于没保留。
             // 判据：双拼结果若**全是单字**而全拼能出多字词，说明这串更像全拼，
             //   此时全拼的多字词应提到双拼单字之前（仍在 user 词典之后）。
@@ -403,9 +440,14 @@ final class PinyinEngine {
             let fpAllSingleChar = !fp.isEmpty && fp.allSatisfy { $0.word.count == 1 }
             let plainHasPhrase = plainPinyin.contains { $0.word.count > 1 }
             if fpAllSingleChar && plainHasPhrase {
-                return dedupAppend(user + plainPinyin, fp)
+                return dedupAppend(dedupAppend(user + plainPinyin, sentence), fp)
             }
-            return dedupAppend(user + fp, plainPinyin)
+            // 整句候选插在精确命中之后、全拼之前。
+            // 理由：用户连打 wouivsgo 时，整串精确命中只能出「我是」（前缀），
+            //   而整句「我是中国」才是用户真实意图 —— 但不能抢精确命中的首选，
+            //   因为用户也可能真只想打「我是」然后继续打下一个词。
+            //   放第二位：一眼能看到，按一下右箭头/数字 2 就能选。
+            return dedupAppend(dedupAppend(user + fp, sentence), plainPinyin)
         }
     }
 
@@ -430,4 +472,136 @@ final class PinyinEngine {
         }
         return out
     }
+    // MARK: - 整句切分（多字连打）
+
+    /// 把一长串双拼码切成若干个词，用动态规划取「整体最优」的一种切法。
+    ///
+    /// 为什么需要它（用户实测报「不能多字连打」）：
+    ///   原实现只会「拿整串去查词典」，词典没这个组合就退化成最长前缀 ——
+    ///   `wouivsgo`（我是中国）只出「我是」，后半截 `vsgo` **被静默丢弃**。
+    ///   而用户的实际姿势是「一口气打一句、空格上屏」，这是所有成熟输入法的默认交互。
+    ///
+    /// 算法来源：McBopomofo 的 `walk()`（见 `.pi/plans/00-research.md` §7①）。
+    ///   本质是 DAG 最短路径 —— 每个「切点」是图上一个节点，
+    ///   每个「能查到的词」是一条带权边，求总权重最大的一条路径。
+    ///
+    /// 打分必须带**长词加权**（§7③），否则会退化成一串单字：
+    ///   「我是中国」= 我是(2字) + 中国(2字)  ← 期望
+    ///   若只按词频加总，四个高频单字的总分很容易超过两个双字词。
+    ///   McBopomofo 用 `log10(2.7^(字数-1) × count / norm)`，
+    ///   即每多一个字，分数乘 2.7 —— 这个系数直接沿用（它是被生产验证过的）。
+    ///
+    /// 复杂度：O(n × maxWordSyllables)，n = 音节数。
+    ///   双拼每字定长 2 键，故 n = 键数 / 2；maxWordSyllables 设上限 6。
+    ///   实测见 `bench_engine.sh` 的「整句切分」段。
+    ///
+    /// **它只在整串查不到时才被调用**（见 `query` 内注释）——
+    /// 保证任何现在能打出来的输入，路径完全不变。
+    func segmentSentence(_ input: String, scheme: InputScheme) -> [DictEntry] {
+        let s = input.lowercased()
+        // 双拼每字 2 键：奇数长度说明用户还在打一个字的中途，交给渐进兜底更合适
+        guard s.count >= 4, s.count % 2 == 0, s.count <= Limits.maxSentenceKeys else { return [] }
+
+        let n = s.count / 2                       // 音节数
+
+        // best[i] = 覆盖前 i 个音节的最优解；从 i 出发向后尝试各种词长
+        // score 用 Double 累加对数分，path 存 (词, 起点)
+        var bestScore = [Double](repeating: -.infinity, count: n + 1)
+        var bestFrom  = [Int](repeating: -1, count: n + 1)
+        var bestWord  = [DictEntry?](repeating: nil, count: n + 1)
+        bestScore[0] = 0
+
+        // 性能：DP 内会对同一个 (i, len) 反复拼字符串并查词典。
+        // 坑（实测被性能门禁拦下）：初版每次都 codes[i..<i+len].joined()，
+        //   20 键（10 字）单次查询 **7.75ms**，超过 5ms 门禁 —— 用户会感到卡顿。
+        //   原因不是 DP 本身（O(n×6) 很小），而是 60 次字符串构建 + 字典查询。
+        // 修法：① 用累积前缀直接切片，避免 joined()；② 查询结果缓存。
+        var lookupCache = [String: DictEntry?](minimumCapacity: n * Limits.maxWordSyllables)
+
+        for i in 0..<n where bestScore[i] > -.infinity {
+            // 从位置 i 开始，尝试取 len 个音节组成一个词
+            for len in 1...min(Limits.maxWordSyllables, n - i) {
+                // 直接在原串上切片（双拼每音节定长 2 键，下标可算），不做数组 joined
+                let lo = s.index(s.startIndex, offsetBy: i * 2)
+                let hi = s.index(lo, offsetBy: len * 2)
+                let code = String(s[lo..<hi])
+                let hit: DictEntry?
+                if let c = lookupCache[code] {
+                    hit = c
+                } else {
+                    hit = bestEntry(forFlypyCode: code)
+                    lookupCache[code] = hit
+                }
+                guard let e = hit else { continue }
+                // 打分模型：log10(词频) + 成词奖励 × (字数 - 1)
+                //
+                // 为什么不能只用 McBopomofo 的 log10(fscale^(字数-1) × freq)：
+                //   实测证伪 —— 该式在本项目词库上**完全无效**。
+                //   路径分是「相加」的，词数多的路径凭空多加一项 log10(freq)（约 5 分），
+                //   而 fscale 加权项在总字数相同时两边贡献几乎一致，抵不掉这个偏差。
+                //   实测：fscale 从 2.7 调到 1000，「我是中国」始终输给「我是中+过」
+                //   （单字「中」27万、「过」11万，词频本身就极高）。
+                //   → 这是「分数相加」的**结构性偏差**，不是参数问题，调参无解。
+                //
+                // 改用显式「成词奖励」：每多一个字加固定分，直接对抗切碎倾向。
+                // 奖励值 8 由**真实词库上的 10 例 DP 全路径实测**定出，非估算：
+                //   bonus=0/2 → 1/10 正确；4 → 3/10；5 → 5/10；6 → 8/10；**≥7 → 10/10**
+                //   取 8（比临界值 7 留一档余量，避免词库更新后落回临界）。
+                //   实测用例：我是中国 / 你好我们 / 知道我要 / 安全第一 / 今天天气 /
+                //     工作顺利 / 中国人民 / 明天开会 / 我是学生 / 谢谢你
+                //   复现脚本见 `bench_engine.sh` 的「整句切分」段。
+                let charCount = e.word.count
+                let weighted = log10(Double(max(e.freq, 1)))
+                             + Limits.phraseBonus * Double(charCount - 1)
+                let cand = bestScore[i] + weighted
+                if cand > bestScore[i + len] {
+                    bestScore[i + len] = cand
+                    bestFrom[i + len]  = i
+                    bestWord[i + len]  = e
+                }
+            }
+        }
+
+        // 未能完整覆盖 → 不返回半截结果（半截结果会误导用户以为打完了）
+        guard bestScore[n] > -.infinity else { return [] }
+
+        // 回溯路径拼成一个整句候选
+        var parts: [DictEntry] = []
+        var cur = n
+        while cur > 0, let w = bestWord[cur] {
+            parts.append(w)
+            cur = bestFrom[cur]
+        }
+        guard cur == 0, !parts.isEmpty else { return [] }
+        parts.reverse()
+
+        // 单个词时不必走切分（整串查询已覆盖），避免产出重复候选
+        guard parts.count >= 2 else { return [] }
+
+        let sentence = parts.map { $0.word }.joined()
+        let pinyin   = parts.map { $0.pinyin }.joined(separator: " ")
+        // 整句候选的 freq 取各部分最小值 —— 它不是词典里的真实词，
+        // 不应凭「拼接」获得高于其最弱环节的权重。
+        let freq = parts.map { $0.freq }.min() ?? 1
+        return [DictEntry(pinyin: pinyin, word: sentence, freq: freq)]
+    }
+
+    /// 取某个双拼码下词频最高的一条词典项（切分打分用）。
+    private func bestEntry(forFlypyCode code: String) -> DictEntry? {
+        if let u = _userByFlypy[code]?.first { return u }
+        guard let list = byFlypy[code] else { return nil }
+        return resolve(list, limit: 1).first
+    }
+
+    private enum Limits {
+        /// 参与切分的最大键数。超过则不切分（防 O(n²) 在超长脏输入上卡顿）。
+        /// 24 键 = 12 个字，远超正常一次连打的长度。
+        static let maxSentenceKeys = 24
+        /// 单个词最多几个音节（词典里 6 字以上的词极少，且都是成语/专名）。
+        static let maxWordSyllables = 6
+        /// 成词奖励：每多一个字加多少分。见 segmentSentence 内的实测记录。
+        /// 改这个值必须重跑 bench_engine.sh 的整句切分段（8 例断言会拦住退化）。
+        static let phraseBonus: Double = 8
+    }
+
 }
