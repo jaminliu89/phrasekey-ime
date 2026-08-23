@@ -44,6 +44,8 @@ final class CandidateBarView: NSView {
     static let cellMaxWidth: CGFloat = 200    // 单个候选最大宽度，长文本截断
     static let cornerRadius: CGFloat = 12
     static let maxVisible = 10
+    /// 右侧翻页指示区宽度
+    static let pagerWidth: CGFloat = 18
 
     /// 当前可视窗口的起始下标（全局候选列表中），给序号显示用。
     private(set) var windowStart = 0
@@ -92,6 +94,8 @@ final class CandidateBarView: NSView {
             let attr = [NSAttributedString.Key.font: NSFont.systemFont(ofSize: 16, weight: .medium)]
             w += (c.0 as NSString).size(withAttributes: attr).width + Self.cellPaddingX * 2 + 6
         }
+        // 给翻页箭头留出宽度（画在最右侧）
+        w += Self.pagerWidth
         return min(w, 720)
     }
 
@@ -154,8 +158,29 @@ final class CandidateBarView: NSView {
 
             x += cellW
         }
+
+        drawPager(x: x, height: h)
+    }
+
+    /// 右侧翻页指示 ▲▼（学鼠须管 SquirrelView 的 upPath/downPath）。
+    /// 可用时用 accent 色，不可用时不画 —— 用户一眼知道能不能翻。
+    private func drawPager(x: CGFloat, height h: CGFloat) {
+        guard canPageUp || canPageDown else { return }
+        let cx = min(x + 8, bounds.maxX - 10)
+        let font = NSFont.systemFont(ofSize: 8, weight: .bold)
+        if canPageUp {
+            let s = NSAttributedString(string: "▲",
+                attributes: [.font: font, .foregroundColor: GBoardTheme.accent])
+            s.draw(at: NSPoint(x: cx, y: h / 2 + 1))
+        }
+        if canPageDown {
+            let s = NSAttributedString(string: "▼",
+                attributes: [.font: font, .foregroundColor: GBoardTheme.accent])
+            s.draw(at: NSPoint(x: cx, y: h / 2 - 9))
+        }
     }
 }
+
 
 /// Candidate window: borderless floating NSPanel, follows input cursor.
 final class CandidatePanel: NSPanel {
