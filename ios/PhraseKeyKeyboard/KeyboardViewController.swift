@@ -89,13 +89,14 @@ final class KeyboardViewController: UIInputViewController {
             tc.userInterfaceStyle == .dark ? .white : .black
         }
 
-        /// 常用语候选（需要区分于普通候选）：两种外观下均高对比的橙色
-        /// 不用系统蓝（原实现 RGB 0.26/0.52/0.96）：深色背景下蓝字对比度不足。
+        /// 常用语候选（需要区分于普通候选）：加粗字重，不用彩色
+        /// （不用系统蓝 — 对齐 PhraseKeyTheme 灰度字重体系，靠字重区分层级）
         static let accent = UIColor { tc in
             tc.userInterfaceStyle == .dark
-                ? UIColor(red: 1.0, green: 0.62, blue: 0.23, alpha: 1)
-                : UIColor(red: 0.85, green: 0.42, blue: 0.0,  alpha: 1)
+                ? UIColor.white
+                : UIColor.black
         }
+        static let accentWeight: UIFont.Weight = .semibold
 
         /// 拼音串（次要信息，比候选字弱但仍须清楚可读）
         static let composeText = UIColor { tc in
@@ -426,9 +427,9 @@ final class KeyboardViewController: UIInputViewController {
         for cat in phraseCategories(all) {
             let b = UIButton(type: .system)
             b.setTitle(cat.isEmpty ? "全部" : cat.uppercased(), for: .normal)
-            b.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
             let selected = (phraseCategory ?? "") == cat
-            b.setTitleColor(selected ? Palette.accent : Palette.foreground, for: .normal)
+            b.setTitleColor(selected ? Palette.foreground : Palette.composeText, for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 13, weight: selected ? .semibold : .medium)
             b.backgroundColor = selected ? Palette.keyBackground : Palette.fnKeyBackground
             b.layer.cornerRadius = 6
             b.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
@@ -534,9 +535,10 @@ final class KeyboardViewController: UIInputViewController {
             let b = UIButton(type: .system)
             let mark = c.type == "hotword" ? "⌘ " : ""
             b.setTitle(mark + c.text, for: .normal)
-            b.setTitleColor(c.type == "hotword" ? Palette.accent : Palette.foreground,
-                            for: .normal)
-            b.titleLabel?.font = .systemFont(ofSize: 17, weight: i == 0 ? .semibold : .regular)
+            // 常用语靠字重区分（semibold），不用彩色
+            let isHotword = c.type == "hotword"
+            b.setTitleColor(Palette.foreground, for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 17, weight: isHotword ? Palette.accentWeight : (i == 0 ? .semibold : .regular))
             b.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
             b.tag = i
             b.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)

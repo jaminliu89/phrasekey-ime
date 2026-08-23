@@ -12,6 +12,10 @@ struct PhraseKeySettings: Codable {
     var clipboardHistory: Bool = false
     /// 空格自动展开常用语（精确匹配时直接上屏全文，默认开）
     var autoExpandHotwords: Bool = true
+    /// 自动展开触发键（预留，当前仅 space 实现）
+    var autoExpandTrigger: String = "space"
+    /// 展开后是否保留触发字符（默认 false：空格不保留）
+    var autoExpandKeepTrigger: Bool = false
 
     // MARK: - 目录
 

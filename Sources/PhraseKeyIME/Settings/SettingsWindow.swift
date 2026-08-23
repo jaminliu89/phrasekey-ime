@@ -45,6 +45,19 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         schemeTip.frame = NSRect(x: 292, y: 468, width: 380, height: 20)
         content.addSubview(schemeTip)
 
+        // 自动展开开关
+        let autoExpandBtn = NSButton(checkboxWithTitle: "Auto-expand phrases on space", target: self, action: #selector(autoExpandToggled))
+        autoExpandBtn.state = AppSettings.current.autoExpandHotwords ? .on : .off
+        autoExpandBtn.frame = NSRect(x: 16, y: 436, width: 260, height: 22)
+        autoExpandBtn.tag = 101
+        content.addSubview(autoExpandBtn)
+
+        let keepTriggerBtn = NSButton(checkboxWithTitle: "Keep space after expansion", target: self, action: #selector(keepTriggerToggled))
+        keepTriggerBtn.state = AppSettings.current.autoExpandKeepTrigger ? .on : .off
+        keepTriggerBtn.frame = NSRect(x: 292, y: 436, width: 240, height: 22)
+        keepTriggerBtn.tag = 102
+        content.addSubview(keepTriggerBtn)
+
         // 顶部说明
         let tip = NSTextField(labelWithString: "Phrases = type a key (shortcut) to insert long text instantly. Compatible with mainstream IME formats.")
         tip.font = .systemFont(ofSize: 12)
@@ -64,6 +77,10 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         let delBtn = NSButton(title: "Delete", target: self, action: #selector(deletePressed))
         delBtn.frame = NSRect(x: 236, y: 396, width: 90, height: 28)
         content.addSubview(delBtn)
+
+        let exportBtn = NSButton(title: "Export…", target: self, action: #selector(exportPressed))
+        exportBtn.frame = NSRect(x: 336, y: 396, width: 90, height: 28)
+        content.addSubview(exportBtn)
 
         // 表格
         let colKey = NSTableColumn(identifier: .init("key"))
@@ -167,6 +184,39 @@ final class SettingsWindowController: NSWindowController, NSTableViewDataSource,
         alert.informativeText = "Imported \(n) phrases."
         alert.runModal()
         reloadData()
+    }
+
+    @objc private func exportPressed() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "phrasekey_phrases.json"
+        panel.message = "导出常用语为 JSON"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        do {
+            let data = try encoder.encode(store.items)
+            try data.write(to: url)
+            let alert = NSAlert()
+            alert.messageText = "Export Complete"
+            alert.informativeText = "Exported \(store.items.count) phrases to \(url.lastPathComponent)."
+            alert.runModal()
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Export Failed"
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
+        }
+    }
+
+    @objc private func autoExpandToggled(_ sender: NSButton) {
+        AppSettings.current.autoExpandHotwords = (sender.state == .on)
+        AppSettings.save()
+    }
+
+    @objc private func keepTriggerToggled(_ sender: NSButton) {
+        AppSettings.current.autoExpandKeepTrigger = (sender.state == .on)
+        AppSettings.save()
     }
 
     // MARK: - Table

@@ -82,9 +82,14 @@ final class PhraseKeyController: IMKInputController {
         case " ":                 // 空格：首选上屏 / 常用语精确匹配自动展开
             // 常用语自动展开：打了简码 + 空格 → 直接上屏全文
             // 只有精确匹配（key 完全相等）才触发，前缀匹配不展开，防误触
-            if AppSettings.current.autoExpandHotwords,
-               let hw = Searcher.shared.findExactHotword(composing, scheme: AppSettings.current.scheme) {
-                textInput.insertText(hw.text, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+            let settings = AppSettings.current
+            if settings.autoExpandHotwords,
+               let hw = Searcher.shared.findExactHotword(composing, scheme: settings.scheme) {
+                var text = hw.text
+                if settings.autoExpandKeepTrigger {
+                    text += " "
+                }
+                textInput.insertText(text, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
                 reset()
                 return true
             }
@@ -110,10 +115,13 @@ final class PhraseKeyController: IMKInputController {
                 refreshPanelOnly()
             }
             return true
-        case ";":                 // 双拼分号选词：选第 2 个候选
+        case ";":                 // 双拼分号选词：选当前可视窗口第 2 个候选
             if AppSettings.current.scheme.isFlypy && candidates.count >= 2 {
-                commitCandidate(at: 1, textInput)
-                return true
+                let idx = panel.windowStart + 1
+                if idx < candidates.count {
+                    commitCandidate(at: idx, textInput)
+                    return true
+                }
             }
             // 非双拼或候选不足 → 先提交拼音再放行标点
             if !composing.isEmpty {
@@ -121,10 +129,13 @@ final class PhraseKeyController: IMKInputController {
                 reset()
             }
             return false
-        case "'":                 // 撇号：双拼选第 3 个 / 音节分隔符 / 直接上屏
+        case "'":                 // 撇号：双拼选窗口第 3 个 / 音节分隔符 / 直接上屏
             if AppSettings.current.scheme.isFlypy && candidates.count >= 3 {
-                commitCandidate(at: 2, textInput)
-                return true
+                let idx = panel.windowStart + 2
+                if idx < candidates.count {
+                    commitCandidate(at: idx, textInput)
+                    return true
+                }
             }
             // 作为音节分隔符：计入拼音串（Searcher 层会剥离，但拼音栏显示用户按了）
             // 仅在已有输入时当分隔符；空串时直接上屏撇号

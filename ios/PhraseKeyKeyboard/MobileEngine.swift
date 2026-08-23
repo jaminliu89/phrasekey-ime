@@ -27,12 +27,12 @@ final class MobileEngine {
     /// 空格：首选上屏（有候选）或插入空格
     /// 常用语精确匹配时自动展开全文（可配置，默认开）
     func space() -> String {
-        // 自动展开：精确匹配常用语 key → 直接上屏全文
         let settings = PhraseKeySettings.load()
+        // 自动展开：精确匹配常用语 key → 直接上屏全文
         if settings.autoExpandHotwords,
            let hw = Searcher.shared.findExactHotword(composing, scheme: scheme) {
             reset()
-            return hw.text
+            return settings.autoExpandKeepTrigger ? (hw.text + " ") : hw.text
         }
         if !candidates.isEmpty {
             return commit(at: 0) ?? " "
