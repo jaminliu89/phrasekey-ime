@@ -45,6 +45,39 @@ final class PhraseKeyController: IMKInputController {
         }
 
         // ---- 输入中 ----
+        // 先处理功能键（方向键/Esc 等无可打印字符，要看 keyCode）
+        switch event.keyCode {
+        case 53:                  // Esc：取消当前输入（不上屏）
+            reset()
+            return true
+        case 123:                 // ← 上一个候选
+            if !candidates.isEmpty {
+                selected = selected > 0 ? selected - 1 : candidates.count - 1
+                refreshPanelOnly()
+            }
+            return true
+        case 124:                 // → 下一个候选
+            if !candidates.isEmpty {
+                selected = (selected + 1) % candidates.count
+                refreshPanelOnly()
+            }
+            return true
+        case 126:                 // ↑ 上翻一页
+            if !candidates.isEmpty {
+                selected = max(0, selected - CandidateBarView.maxVisible)
+                refreshPanelOnly()
+            }
+            return true
+        case 125:                 // ↓ 下翻一页
+            if !candidates.isEmpty {
+                selected = min(candidates.count - 1, selected + CandidateBarView.maxVisible)
+                refreshPanelOnly()
+            }
+            return true
+        default:
+            break
+        }
+
         switch chars {
         case " ":                 // 空格：上屏首选
             commitSelected(textInput)
@@ -57,10 +90,27 @@ final class PhraseKeyController: IMKInputController {
             textInput.insertText(composing, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
             reset()
             return true
+        case "-", "[":            // 上翻页（常见输入法习惯）
+            if !candidates.isEmpty {
+                selected = max(0, selected - CandidateBarView.maxVisible)
+                refreshPanelOnly()
+            }
+            return true
+        case "=", "]":            // 下翻页
+            if !candidates.isEmpty {
+                selected = min(candidates.count - 1, selected + CandidateBarView.maxVisible)
+                refreshPanelOnly()
+            }
+            return true
         default:
-            if let n = Int(chars), (1...9).contains(n), candidates.count >= n {
-                commitCandidate(at: n - 1, textInput)
-                return true
+            if let n = Int(chars), (1...9).contains(n) {
+                // 数字键选词必须基于**当前可视窗口**，而非全局下标。
+                // 否则翻页后按 1 选到的还是第一页的第一个。
+                let idx = panel.windowStart + (n - 1)
+                if idx < candidates.count {
+                    commitCandidate(at: idx, textInput)
+                    return true
+                }
             }
             if isPinyinInput(chars) {
                 composing += chars.lowercased()
@@ -77,6 +127,14 @@ final class PhraseKeyController: IMKInputController {
     }
 
     // MARK: - Candidates & Commit
+
+    /// 只刷面板选中态，不重查词库（方向键/翻页用）。
+    /// 否则每次按方向键都重新 search，既浪费也会把 selected 重置成 0。
+    private func refreshPanelOnly() {
+        guard !candidates.isEmpty else { return }
+        let list = candidates.map { ($0.text, $0.type) }
+        panel.update(candidates: list, selected: selected, at: insertionPoint())
+    }
 
     private func refresh() {
         candidates = Searcher.shared.search(composing, scheme: AppSettings.current.scheme)

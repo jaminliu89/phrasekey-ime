@@ -17,7 +17,15 @@ enum GBoardTheme {
     static let subDark        = NSColor(calibratedWhite: 0.60, alpha: 1.00)
 
     static var isDark: Bool {
-        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        // 坑（已定性）：原用 NSApp.effectiveAppearance 判深色 —— 但输入法是**独立后台进程**，
+        //   它的 NSApp 外观与用户当前前台 app 无关，也不一定跟随系统设置，
+        //   常被判为 aqua（浅色）→ 深色背景配深色字，候选条文字看不见。
+        // 改用系统级偏好（AppleInterfaceStyle），这是全局值，不依赖本进程外观。
+        if let style = UserDefaults.standard.string(forKey: "AppleInterfaceStyle"),
+           style.lowercased().contains("dark") {
+            return true
+        }
+        return false
     }
     static var bg: NSColor { isDark ? bgDark : bgLight }
     static var highlightBg: NSColor { isDark ? highlightBgDark : highlightBgLight }
@@ -37,9 +45,21 @@ final class CandidateBarView: NSView {
     static let cornerRadius: CGFloat = 12
     static let maxVisible = 10
 
+    /// 当前可视窗口的起始下标（全局候选列表中），给序号显示用。
+    private(set) var windowStart = 0
+
     func configure(candidates: [(String, String)], selected: Int) {
-        self.candidates = Array(candidates.prefix(Self.maxVisible))
-        self.selectedIndex = min(selected, max(0, self.candidates.count - 1))
+        // 坑（已定性）：原为 `prefix(maxVisible)` 硬截前 10 个 —— 翻页后
+        //   第 11 个以后的候选**永远画不出来**，等于翻页功能形同虚设。
+        // 改为按 selected 滑动窗口：选中项总在可视范围内。
+        let total = candidates.count
+        let sel = min(max(0, selected), max(0, total - 1))
+        var start = (sel / Self.maxVisible) * Self.maxVisible
+        if start >= total { start = max(0, total - Self.maxVisible) }
+        let end = min(total, start + Self.maxVisible)
+        self.windowStart = start
+        self.candidates = start < end ? Array(candidates[start..<end]) : []
+        self.selectedIndex = sel - start
         needsDisplay = true
         frame = NSRect(x: 0, y: 0, width: Self.width(for: self.candidates), height: Self.cellHeight)
     }
@@ -76,8 +96,12 @@ final class CandidateBarView: NSView {
                               xRadius: Self.cornerRadius, yRadius: Self.cornerRadius)
         GBoardTheme.bg.setFill()
         bg.fill()
-        // Thin border
-        NSColor.black.withAlphaComponent(0.08).setStroke()
+        // Thin border（深色下用白边，否则黑边在深色背景上看不见）
+        if GBoardTheme.isDark {
+            NSColor.white.withAlphaComponent(0.12).setStroke()
+        } else {
+            NSColor.black.withAlphaComponent(0.08).setStroke()
+        }
         bg.lineWidth = 1
         bg.stroke()
 
@@ -144,6 +168,9 @@ final class CandidatePanel: NSPanel {
         isReleasedWhenClosed = false
         contentView = barView
     }
+
+    /// 当前可视窗口起始下标（透传 barView，供数字键选词换算全局下标）。
+    var windowStart: Int { barView.windowStart }
 
     /// Update and show candidates.
     func update(candidates: [(String, String)], selected: Int, at screenPoint: NSPoint) {
