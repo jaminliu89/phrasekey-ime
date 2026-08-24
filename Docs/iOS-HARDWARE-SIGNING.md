@@ -1,4 +1,4 @@
-# PhraseKey iOS 真机签名指南（免费 Apple ID）
+# PhraseKey iOS 真机签名指南
 
 > 用**免费** Apple ID（Personal Team）在自己的 iPhone 上运行 PhraseKey，
 > 不需要 $99/年的 Apple Developer Program。
@@ -34,12 +34,12 @@
 ### 第 1 步：确认 Apple ID 已登录 Xcode
 
 Xcode 菜单：**Xcode → Settings → Accounts**，确认列表里有你的 Apple ID。
-没有就点左下角 **＋ → Apple ID** 登录（用你的 Apple ID 即可，无需付费）。
+没有就点左下角 **＋ → Apple ID** 登录并完成开发签名配置。
 
 ### 第 2 步：确认签名团队
 
 > **本项目已将 Team ID 写死在 `ios/project.yml`（`DEVELOPMENT_TEAM: 63PZWHLKMU`），
-> 跑 `xcodegen generate` 后无需再手动选 Team，直接 ⌘R 即可。**
+> 运行 `xcodegen generate` 后，确认生成工程中的 Team 与签名配置正确，再执行 ⌘R。**
 > 换人签名时，改 project.yml 里的 Team ID 再重新生成。
 
 1. Xcode 左侧选中 **PhraseKeyHost** target（项目导航器里点项目名，再点 PhraseKeyHost）
@@ -47,7 +47,7 @@ Xcode 菜单：**Xcode → Settings → Accounts**，确认列表里有你的 Ap
 3. 确认 **Team** 下拉框显示的是你的 Apple ID（如 "Kurt Gibson (Personal Team)"）
 4. 若不是，勾 **Automatically manage signing** 并重新选 Team
 
-> ⚠️ 如果跑 `xcodegen generate` 重新生成项目，Team 来自 project.yml（已内置），无需重选。
+> ⚠️ 如果运行 `xcodegen generate` 重新生成项目，请重新核对 Team 与签名配置。
 
 ### 第 3 步：给键盘扩展选签名团队
 

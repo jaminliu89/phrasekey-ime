@@ -1,4 +1,4 @@
-# Contributing to PhraseKey
+# 参与 PhraseKey
 
 欢迎修复 iOS 输入、快捷短语与跨端数据问题。开始前请阅读 [公开协作接手说明](Docs/OPEN-SOURCE-HANDOFF.md)。
 

@@ -1,143 +1,64 @@
 # PhraseKey
 
-**Your phrases, everywhere. Open IME that puts your data first.**
+PhraseKey 是一款以「每句话都是资产」为核心的小鹤双拼输入法。用户主动保存有用文字，通过快捷码或短语面板在任意输入位置复用。
 
-[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+> 项目处于 iOS Alpha 阶段。请以 [公开协作接手说明](Docs/OPEN-SOURCE-HANDOFF.md) 中的真实状态为准。
 
-PhraseKey is an open-source, cross-platform input method engine (IME).  
-It frees your phrases, dictionaries, and typing habits from proprietary lock-in — so they follow you across devices, not companies.
+## 产品目标
 
-<img src="BrandAssets/PhraseKey.svg" width="80" alt="PhraseKey logo">
+- 小鹤双拼作为日常可用的中文输入基础。
+- 键盘顶部固定提供「短语」入口。
+- 用户主动执行「复制 → 短语 → ＋ → 保存」，不自动收集完整输入历史。
+- 已保存短语按最新保存时间优先展示，可通过快捷码召回并一键上屏。
+- iOS 优先；后续以同一数据模型接入 macOS 与 Apple 多端同步。
 
-## The Problem
+## 当前状态
 
-| Pain | Business IMEs | PhraseKey |
-|------|---------------|-----------|
-| **Phrases locked in** | Proprietary format, export requires reverse engineering | Open JSON, **compatible with common hotword export formats** |
-| **No cross-device sync** | Rebuild phrase memory on every new device | Data directory can point to **iCloud Drive / cloud drive / git** |
-| **Privacy vs convenience** | Cloud sync uploads; local doesn't sync | **Self-hosted**: data stays on your devices and your cloud, formats are fully open |
-
-## Features
-
-| Capability | Description |
+| 能力 | 状态 |
 |---|---|
-| **Input schemes** | Pinyin / **Xiaohe Shuangpin** (default) / Xingma (needs your own code table — see below) |
-| **Phrases first** | Key matches (your shortcut → long text) always top the candidate list |
-| **Import from WeType** | One command pulls your phrases out of WeChat IME (`phrase.py wetype`) — read-only, same field layout, no conversion |
-| **Sentence segmentation** | Type multiple words in one go: `wouivsgo` → 我是中国 (DAG shortest-path over the dictionary) |
-| **Phrase panel on keyboard** | iOS: a dedicated 短语 key opens a browsable panel grouped by shortcut initial — 500+ phrases stay reachable without memorizing codes |
-| **Phrase Manager** | Browse, search, add, edit, delete phrases — full manager panel on both macOS and iOS |
-| **Quick insert from panel** | Pick a phrase in the manager → it's typed straight into the frontmost app |
-| **Paging + preedit** | macOS candidate bar shows ▲▼ when more candidates exist, and echoes the raw code you typed (essential for Shuangpin self-correction) |
-| **Auto-learn** | Words you pick get promoted — the more you type, the smarter it gets |
-| **Open data formats** | TSV/JSON — diff-able, git-able, scriptable; the data dir is yours |
-| **Privacy-first** | Data directory is yours: local, cloud, or git — you choose |
-| **Gboard-inspired UI** | Clean candidate bar with Google-style blue accent and dark mode |
-| **Pinyin engine** | Self-contained, cross-platform (11072-character pinyin table, no Apple CFString dependency) |
+| 小鹤双拼核心 | 已接入，仍需持续真机回归 |
+| 键盘短语入口与面板 | 已实现，需真机 UI 走查 |
+| 剪贴板主动保存 | 正在修复真机写入闭环 |
+| 键盘内 `.xlsx` 导出 | 已实现，待系统分享与表格应用实机验证 |
+| Host App 管理页 | 存在黑屏问题，待修复 |
+| CloudKit 与 macOS 同步 | 未开始 |
 
-## Cross-Platform Architecture
+请勿将构建成功视为功能验收通过。
 
-```
-┌─ Input Shell (thin, per-platform) ────────────────┐
-│  macOS: InputMethodKit    iOS: Keyboard Extension  │
-└──────────────────┬─────────────────────────────────┘
-┌─ Core Engine (platform-agnostic, reusable) ───────┐
-│  Pinyin/Shuangpin/Xingma · Dictionary · Phrases    │
-│  Candidate ranking                                 │
-│  (Pure Foundation + built-in tables, no AppKit)    │
-└──────────────────┬─────────────────────────────────┘
-┌─ Data Layer (open formats, syncable) ─────────────┐
-│  hotwords.json (compatible hotword format)          │
-│  user_dict.tsv · xingma.tsv · config.json           │
-│  Directory: iCloud Drive / cloud drive / git repo  │
-└────────────────────────────────────────────────────┘
-```
-
-## Quick Start
+## 本地构建
 
 ```bash
-bash Scripts/build_app.sh release   # Build macOS release (with factory gates)
-bash Scripts/install.sh             # Install to /Library/Input Methods (needs sudo)
+cd ios/HamsterBase
+xcodebuild -project Hamster.xcodeproj -scheme Hamster -configuration Debug \
+  -destination 'generic/platform=iOS' build
 ```
 
-Then **log out and log back in** → System Settings → Keyboard → Input Sources → **+** → Add "PhraseKey".
+真机调试需在 Xcode 中配置自己的开发签名与 App Group。请勿提交证书、provisioning profile、App Group 数据或 DerivedData。
 
-Verify it was actually registered (this matters — see note below):
+## 数据格式
 
-```bash
-defaults read com.apple.HIToolbox AppleEnabledInputSources | grep -A2 PhraseKey
+快捷短语使用开放 JSON：
+
+```json
+[
+  {
+    "hw_id": "1720000000000",
+    "text": "您好，方案已经整理好了。",
+    "key": "hfa"
+  }
+]
 ```
 
-> **Why system-wide (`/Library`) instead of `~/Library`?**
-> Measured 2026-08-24: with a user-level install the process launches fine, but
-> `AppleEnabledInputSources` has **zero** PhraseKey entries — macOS never registers it,
-> so it never shows up in System Settings and can't be used at all.
-> Reference specimen: Squirrel (鼠须管), a known-working IME, also installs system-wide.
+- `hw_id`：保存时的毫秒时间戳。
+- `text`：完整短语。
+- `key`：用户可记忆的快捷码。
 
-### iOS (Keyboard Extension)
+任何开源样例必须使用虚构短语，禁止提交个人剪贴板或真实常用语。
 
-```bash
-cd ios && xcodegen generate      # Generate Xcode project
-# 模拟器构建（无需签名）：
-xcodebuild -scheme PhraseKeyHost -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
-# 装到已启动的模拟器：
-#   xcrun simctl boot "$(xcrun simctl list devices available -j | jq -r '.devices[][] | select(.name=="iPhone 17 Pro") | .udid' | head -1)"
-#   xcrun simctl install booted <DerivedData>/Build/Products/Debug-iphonesimulator/PhraseKey.app
-#   xcrun simctl launch booted com.phrasekey.ime
-```
+## 参与贡献
 
-**真机运行（免费 Apple ID 即可，无需 $99）：**
+优先解决 iOS 真机保存、短语入口可见性、上屏、导出和 Host 黑屏问题。详细验收标准见 [公开协作接手说明](Docs/OPEN-SOURCE-HANDOFF.md) 和 [贡献规范](CONTRIBUTING.md)。
 
-1. 打开 `ios/PhraseKeyIOS.xcodeproj`，按 [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md) 操作
-2. 两个 target（PhraseKeyHost / PhraseKeyKeyboard）都选你的 Apple ID 作为 Team
-3. 连接 iPhone → ⌘R 运行 → iPhone 上信任开发者 → 设置里添加 PhraseKey 键盘并开启「允许完全访问」
+## 许可证
 
-> 免费账号限制：签名 7 天过期（重新 ⌘R 即可续签）、最多 3 个 Bundle ID。
-
-## Xiaohe Shuangpin / Xingma
-
-- **Xiaohe Shuangpin**: Built-in complete key table (zero-initials, ü/ui context, iang/uang, iong/ong, ua/uo/uai context). Bidirectional encode/decode.  
-  Examples: `nihc` = 你好, `iyjp` = 春节, `jv` = 居.
-- **Xiaohe Xingma** — **not bundled, by design.** The official Xiaohe Xingma code table is closed-source;
-  its EULA forbids reverse engineering and reserves all copyright to flypy.com, so it cannot legally ship
-  inside an MIT project. Supply your own table at `~/Library/Application Support/PhraseKey/xingma.tsv`
-  (format: `char\tcode`). **Without a table, Xingma silently degrades to plain Shuangpin** — nothing is
-  lost, but no shape filtering happens either.
-- **Phrase keys** (your custom shortcuts) always win — they're your personal shape codes.
-
-## Open Data Formats (Key to Cross-Device Sync)
-
-- **Phrases**: `[{"hw_id":"...","text":"...","key":"..."}]` (compatible with mainstream hotword exports)
-- **Dictionary**: `pinyin\tword\tfrequency` (built-in `dict.tsv` + user `user_dict.tsv`)
-- **Settings**: `config.json` (scheme, data directory — syncs with your data dir)
-- **Defaults**: `~/Library/Application Support/PhraseKey/`, configurable in config.json
-
-## Roadmap
-
-- [x] v0.1: IMK skeleton + engine + phrases + Gboard UI
-- [x] v0.2: Xiaohe Shuangpin + cross-platform data layer + iOS keyboard extension (App Group shared data)
-- [x] User dictionary learning (auto-learn committed words) — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
-- [x] Phrase Manager panel (macOS menu bar + iOS host app, both with add/edit/delete/search)
-- [x] Quick insert from the phrase panel into the frontmost app
-- [ ] Xingma shape filtering — code path exists but is **untested** (needs a user-supplied table)
-- [x] Full dictionary / Xingma code table import docs — see [Docs/DATA-AND-IMPORT.md](Docs/DATA-AND-IMPORT.md)
-- [x] iOS hardware signing guide (free Apple ID supported — see [Docs/iOS-HARDWARE-SIGNING.md](Docs/iOS-HARDWARE-SIGNING.md))
-- [x] **Sentence segmentation** — multi-word typing via DAG shortest path (8/8 regression)
-- [x] **WeType import** — pull your phrases out of WeChat IME, read-only (`Scripts/phrase.py wetype`)
-- [x] **iOS phrase panel** — browsable, grouped by shortcut initial; phrases bundled and seeded on first launch
-- [x] **macOS candidate paging + preedit** — ▲▼ indicator and raw-code echo (modeled on Squirrel)
-- [ ] macOS long-candidate layout — may need `NSTextLayoutManager` (Squirrel uses it)
-- [ ] iOS phrase panel search box — grouping alone gets thin past ~500 phrases
-- [ ] Scheduled incremental sync from WeType (launchd)
-
-**Explicitly out of scope** (this is a personal tool — see `.pi/plans/01-positioning.md`):
-Windows/Linux ports · clipboard history · cloud sync · bundled Xingma table · plugin/theme system
-
-## Repository
-
-- GitHub: https://github.com/jaminliu89/phrasekey-ime
-- Gitee: https://gitee.com/jaminkim/phrasekey-ime
-
-## License
-
-MIT
+[MIT](LICENSE)
